@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -767,7 +766,7 @@ export function BookingForm() {
                       Contact Email
                        <TooltipWrapper content={formFields.find(f => f.name === 'contactEmail')?.tooltip || ''}>
                         <HelpCircle className="h-4 w-4 text-muted-foreground" />
-                      </TooltipWrapper>
+                      </FormLabel>
                     </FormLabel>
                     <FormControl>
                       <Input placeholder="jane.doe@example.com" {...field} />
@@ -807,3 +806,5 @@ export function BookingForm() {
     </Form>
   );
 }
+
+    
