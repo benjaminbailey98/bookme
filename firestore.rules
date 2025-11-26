@@ -160,7 +160,9 @@ service cloud.firestore {
     }
     
     match /{path=**}/booking_requests/{bookingRequestId} {
-      allow list: if isSignedIn() && request.query.get("artistProfileId") == request.auth.uid;
+        // This rule allows an artist to list all booking requests where their user ID is the artistProfileId.
+        // It secures the collection group query by ensuring the query *must* include `where('artistProfileId', '==', request.auth.uid)`.
+      allow list: if isSignedIn() && request.query.resource.data.artistProfileId == request.auth.uid;
     }
 
     /**
@@ -208,3 +210,5 @@ service cloud.firestore {
     }
   }
 }
+
+    
