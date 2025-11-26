@@ -96,7 +96,7 @@ export default function VenueProfilePage() {
   }, [profile, user, form]);
 
   async function onSubmit(data: ProfileFormValues) {
-    if (!user || !firestore) {
+    if (!user || !firestore || !venueProfileRef) {
       toast({
         variant: 'destructive',
         title: 'Error',
@@ -106,7 +106,6 @@ export default function VenueProfilePage() {
     }
 
     setIsSubmitting(true);
-    const profileRef = doc(firestore, 'venue_profiles', user.uid);
     
     const finalProfileData = {
       ...data,
@@ -115,14 +114,14 @@ export default function VenueProfilePage() {
     };
 
     try {
-      await setDoc(profileRef, finalProfileData, { merge: true });
+      await setDoc(venueProfileRef, finalProfileData, { merge: true });
       toast({
         title: 'Profile Updated!',
         description: 'Your venue profile has been saved successfully.',
       });
     } catch (serverError) {
       const permissionError = new FirestorePermissionError({
-        path: profileRef.path,
+        path: venueProfileRef.path,
         operation: 'update',
         requestResourceData: finalProfileData,
       });
