@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { collection } from 'firebase/firestore';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import type { ArtistProfile } from '@/lib/types';
@@ -20,24 +21,49 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Loader2, PlusCircle } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { ArtistForm } from './artist-form';
 
 export default function AdminArtistsPage() {
   const firestore = useFirestore();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const artistsCollectionRef = useMemoFirebase(() => {
     if (!firestore) return null;
     return collection(firestore, 'artist_profiles');
   }, [firestore]);
 
-  const { data: artists, isLoading } = useCollection<ArtistProfile>(artistsCollectionRef);
+  const { data: artists, isLoading } =
+    useCollection<ArtistProfile>(artistsCollectionRef);
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
       <div className="flex items-center justify-between space-y-2">
         <h2 className="text-3xl font-bold tracking-tight">Manage Artists</h2>
-        <Button>
-          <PlusCircle className="mr-2 h-4 w-4" /> Add Artist
-        </Button>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <PlusCircle className="mr-2 h-4 w-4" /> Add Artist
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Create New Artist Profile</DialogTitle>
+              <DialogDescription>
+                Fill out the form to create a new user account and artist
+                profile.
+              </DialogDescription>
+            </DialogHeader>
+            <ArtistForm onSuccess={() => setIsDialogOpen(false)} />
+          </DialogContent>
+        </Dialog>
       </div>
       <Card>
         <CardHeader>
@@ -67,11 +93,15 @@ export default function AdminArtistsPage() {
               {!isLoading && artists && artists.length > 0 ? (
                 artists.map((artist) => (
                   <TableRow key={artist.id}>
-                    <TableCell className="font-medium">{artist.stageName}</TableCell>
+                    <TableCell className="font-medium">
+                      {artist.stageName}
+                    </TableCell>
                     <TableCell>{artist.realName}</TableCell>
                     <TableCell>{artist.personalEmail}</TableCell>
                     <TableCell className="text-right">
-                       <Button variant="outline" size="sm">View Profile</Button>
+                      <Button variant="outline" size="sm">
+                        View Profile
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))
