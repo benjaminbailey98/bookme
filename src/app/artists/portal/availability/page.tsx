@@ -1,15 +1,306 @@
+'use client';
+
+import { useState } from 'react';
+import {
+  collection,
+  addDoc,
+  deleteDoc,
+  doc,
+  query,
+  where,
+} from 'firebase/firestore';
+import { useFirestore, useUser, useCollection, useMemoFirebase } from '@/firebase';
+import type { ArtistAvailability } from '@/lib/types';
+import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
+import { addDays, format, isSameDay } from 'date-fns';
+import { PlusCircle, Trash2, XCircle } from 'lucide-react';
+import { FirestorePermissionError } from '@/firebase/errors';
+import { errorEmitter } from '@/firebase/error-emitter';
+
+type AvailabilityForDate = Omit<ArtistAvailability, 'artistProfileId' | 'unavailableDate'>[];
 
 export default function ArtistAvailabilityPage() {
+  const { toast } = useToast();
+  const { user } = useUser();
+  const firestore = useFirestore();
+
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(
+    new Date()
+  );
+  const [isAllDay, setIsAllDay] = useState(false);
+  const [timeRanges, setTimeRanges] = useState([{ from: '', to: '' }]);
+
+  const availabilityCollectionRef = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return collection(firestore, 'artist_profiles', user.uid, 'availability');
+  }, [firestore, user]);
+  
+  const { data: availabilityData, isLoading } = useCollection<ArtistAvailability>(availabilityCollectionRef);
+
+  const unavailableDates =
+    availabilityData?.map((a) => new Date(a.unavailableDate)) || [];
+
+  const handleDateSelect = (date: Date | undefined) => {
+    if (!date) return;
+    setSelectedDate(date);
+    
+    const existingForDate = availabilityData?.find(a => isSameDay(new Date(a.unavailableDate), date));
+    if (existingForDate) {
+      setIsAllDay(existingForDate.isAllDay || false);
+      if (existingForDate.unavailableStartTime && existingForDate.unavailableEndTime) {
+         // This is simplified. A real app might have multiple entries per day.
+         setTimeRanges([{ from: existingForDate.unavailableStartTime, to: existingForDate.unavailableEndTime }]);
+      } else {
+         setTimeRanges([{ from: '', to: '' }]);
+      }
+    } else {
+      setIsAllDay(false);
+      setTimeRanges([{ from: '', to: '' }]);
+    }
+  };
+
+  const handleTimeChange = (
+    index: number,
+    field: 'from' | 'to',
+    value: string
+  ) => {
+    const newRanges = [...timeRanges];
+    newRanges[index][field] = value;
+    setTimeRanges(newRanges);
+  };
+
+  const addTimeRange = () => {
+    setTimeRanges([...timeRanges, { from: '', to: '' }]);
+  };
+
+  const removeTimeRange = (index: number) => {
+    const newRanges = timeRanges.filter((_, i) => i !== index);
+    setTimeRanges(newRanges);
+  };
+
+  const handleSaveAvailability = async () => {
+    if (!user || !firestore || !selectedDate) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'You must be logged in and select a date.',
+      });
+      return;
+    }
+
+    // First, clear existing availability for the selected date
+    const existingEntries = availabilityData?.filter(a => isSameDay(new Date(a.unavailableDate), selectedDate)) || [];
+    for (const entry of existingEntries) {
+      const docRef = doc(firestore, 'artist_profiles', user.uid, 'availability', entry.id);
+      deleteDoc(docRef).catch(serverError => {
+        const permissionError = new FirestorePermissionError({
+          path: docRef.path,
+          operation: 'delete',
+        });
+        errorEmitter.emit('permission-error', permissionError);
+      })
+    }
+
+    const baseData = {
+      artistProfileId: user.uid,
+      unavailableDate: format(selectedDate, 'yyyy-MM-dd'),
+    };
+
+    if (isAllDay) {
+        const newEntry = { ...baseData, isAllDay: true };
+        addDoc(collection(firestore, 'artist_profiles', user.uid, 'availability'), newEntry)
+            .catch(serverError => {
+                const permissionError = new FirestorePermissionError({
+                    path: `artist_profiles/${user.uid}/availability`,
+                    operation: 'create',
+                    requestResourceData: newEntry,
+                });
+                errorEmitter.emit('permission-error', permissionError);
+            });
+    } else {
+        for (const range of timeRanges) {
+            if (range.from && range.to) {
+                const newEntry = {
+                    ...baseData,
+                    isAllDay: false,
+                    unavailableStartTime: range.from,
+                    unavailableEndTime: range.to,
+                };
+                addDoc(collection(firestore, 'artist_profiles', user.uid, 'availability'), newEntry)
+                    .catch(serverError => {
+                        const permissionError = new FirestorePermissionError({
+                            path: `artist_profiles/${user.uid}/availability`,
+                            operation: 'create',
+                            requestResourceData: newEntry,
+                        });
+                        errorEmitter.emit('permission-error', permissionError);
+                    });
+            }
+        }
+    }
+
+    toast({
+      title: 'Availability Saved',
+      description: `Your schedule for ${format(
+        selectedDate,
+        'PPP'
+      )} has been updated.`,
+    });
+  };
+
+  const handleClearAvailabilityForDay = async () => {
+     if (!user || !firestore || !selectedDate) return;
+      const existingEntries = availabilityData?.filter(a => isSameDay(new Date(a.unavailableDate), selectedDate)) || [];
+      if (existingEntries.length === 0) {
+        toast({ title: "You are already available on this day."});
+        return;
+      }
+      for (const entry of existingEntries) {
+        const docRef = doc(firestore, 'artist_profiles', user.uid, 'availability', entry.id);
+        deleteDoc(docRef).catch(serverError => {
+           const permissionError = new FirestorePermissionError({
+                path: docRef.path,
+                operation: 'delete',
+            });
+            errorEmitter.emit('permission-error', permissionError);
+        });
+      }
+      toast({
+          title: "Availability Cleared",
+          description: `You are now marked as available for ${format(selectedDate, 'PPP')}.`,
+          variant: "default"
+      });
+      setIsAllDay(false);
+      setTimeRanges([{ from: '', to: '' }]);
+  }
+
+
   return (
-    <div className="container mx-auto max-w-4xl py-12 md:py-20">
-      <div className="space-y-2 text-center">
-        <h1 className="text-3xl md:text-4xl font-bold tracking-tighter font-headline">
-          Availability
+    <div className="container mx-auto max-w-6xl py-12 md:py-20">
+      <div className="space-y-2 mb-12">
+        <h1 className="text-3xl md:text-4xl font-bold tracking-tighter font-headline text-center">
+          My Availability
         </h1>
-        <p className="text-muted-foreground max-w-2xl mx-auto">
-          Manage your schedule. Content coming soon!
+        <p className="text-muted-foreground max-w-2xl mx-auto text-center">
+          Select dates on the calendar to mark yourself as unavailable for
+          bookings.
         </p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <Card className="md:col-span-2">
+          <CardContent className="p-2">
+            <Calendar
+              mode="multiple"
+              selected={unavailableDates}
+              onSelect={(dates) => {
+                // This component is for display only, selection logic is handled by onDayClick
+              }}
+              onDayClick={handleDateSelect}
+              className="p-0 [&_td]:w-full"
+              classNames={{
+                month: 'space-y-4 p-4',
+                caption: 'flex justify-center pt-1 relative items-center',
+                table: 'w-full border-collapse space-y-1',
+                head_row: 'flex justify-around',
+                head_cell:
+                  'text-muted-foreground rounded-md w-full font-normal text-[0.8rem]',
+                row: 'flex w-full mt-2 justify-around',
+                cell: 'h-auto text-center text-sm p-0 relative first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20',
+                day: 'h-14 w-full p-0 font-normal aria-selected:opacity-100',
+                day_selected:
+                  'bg-destructive text-destructive-foreground hover:bg-destructive hover:text-destructive-foreground focus:bg-destructive focus:text-destructive-foreground',
+                day_today: 'bg-accent text-accent-foreground',
+                day_outside: 'text-muted-foreground opacity-50',
+              }}
+            />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              Set Unavailability for{' '}
+              {selectedDate ? format(selectedDate, 'PPP') : '...'}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="all-day"
+                checked={isAllDay}
+                onCheckedChange={setIsAllDay}
+              />
+              <Label htmlFor="all-day">Unavailable for the entire day</Label>
+            </div>
+
+            {!isAllDay && (
+              <div className="space-y-4">
+                <Label>Unavailable Times</Label>
+                {timeRanges.map((range, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <Input
+                      type="time"
+                      value={range.from}
+                      onChange={(e) =>
+                        handleTimeChange(index, 'from', e.target.value)
+                      }
+                    />
+                    <span>-</span>
+                    <Input
+                      type="time"
+                      value={range.to}
+                      onChange={(e) =>
+                        handleTimeChange(index, 'to', e.target.value)
+                      }
+                    />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removeTimeRange(index)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={addTimeRange}
+                  className="w-full"
+                >
+                  <PlusCircle className="mr-2 h-4 w-4" /> Add Time Range
+                </Button>
+              </div>
+            )}
+            <div className="flex flex-col space-y-2">
+                <Button onClick={handleSaveAvailability}>Save Unavailability</Button>
+                 <Button variant="outline" onClick={handleClearAvailabilityForDay}>
+                    <XCircle className="mr-2 h-4 w-4" />
+                    Mark as Available
+                </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
+}
+
+// Helper type for lib
+declare module '@/lib/types' {
+    interface ArtistAvailability {
+        id: string;
+        artistProfileId: string;
+        unavailableDate: string; // ISO Date string
+        unavailableStartTime?: string;
+        unavailableEndTime?: string;
+        isAllDay?: boolean;
+    }
 }
