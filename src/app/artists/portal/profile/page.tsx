@@ -1,4 +1,3 @@
-
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -27,6 +26,10 @@ import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { UploadCloud, PlusCircle, Trash2 } from 'lucide-react';
 import { PasswordInput } from '@/components/ui/password-input';
+import { useFirestore, useUser } from '@/firebase';
+import { doc, setDoc } from 'firebase/firestore';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 const socialLinkSchema = z.object({
   platform: z.string(),
@@ -61,11 +64,29 @@ type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
 export default function ArtistProfilePage() {
   const { toast } = useToast();
+  const firestore = useFirestore();
+  const { user } = useUser();
   
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
     defaultValues: {
+      stageName: '',
+      realName: '',
+      personalEmail: '',
+      personalPhone: '',
+      shortBio: '',
+      websiteUrl: '',
+      instagramUrl: '',
+      facebookUrl: '',
+      youtubeUrl: '',
+      spotifyUrl: '',
       additionalLinks: [],
+      managementCompanyName: '',
+      managementContactPerson: '',
+      managementEmail: '',
+      managementPhone: '',
+      newPassword: '',
+      confirmPassword: '',
     },
   });
 
@@ -76,11 +97,44 @@ export default function ArtistProfilePage() {
   });
 
   function onSubmit(data: ProfileFormValues) {
-    console.log(data);
-    toast({
-      title: 'Profile Updated!',
-      description: 'Your changes have been saved successfully.',
-    });
+    if (!user || !firestore) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'You must be logged in to update your profile.',
+      });
+      return;
+    }
+
+    const { newPassword, confirmPassword, ...profileData } = data;
+    const profileRef = doc(firestore, 'artist_profiles', user.uid);
+    
+    const finalProfileData = {
+      ...profileData,
+      userId: user.uid,
+      id: user.uid, // Explicitly set id for consistency with schema
+    };
+
+    setDoc(profileRef, finalProfileData, { merge: true })
+      .then(() => {
+        toast({
+          title: 'Profile Updated!',
+          description: 'Your changes have been saved successfully.',
+        });
+      })
+      .catch((serverError) => {
+        const permissionError = new FirestorePermissionError({
+          path: profileRef.path,
+          operation: 'update',
+          requestResourceData: finalProfileData,
+        });
+        errorEmitter.emit('permission-error', permissionError);
+      });
+
+    // TODO: Handle password change logic
+    if (newPassword) {
+      console.log('Password change requested. Implement this securely.');
+    }
   }
 
   return (
@@ -369,5 +423,3 @@ export default function ArtistProfilePage() {
     </div>
   );
 }
-
-    

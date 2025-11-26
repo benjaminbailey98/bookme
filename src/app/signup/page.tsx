@@ -24,7 +24,7 @@ import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { PasswordInput } from '@/components/ui/password-input';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth, useFirestore } from '@/firebase';
+import { useAuth, useFirestore, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
@@ -73,20 +73,33 @@ function VenueRegistrationForm() {
         data.password
       );
       const user = userCredential.user;
-
-      await setDoc(doc(firestore, 'users', user.uid), {
-        uid: user.uid,
+      
+      const userDocRef = doc(firestore, 'users', user.uid);
+      const userDocData = {
+        id: user.uid,
         email: data.email,
-        companyName: data.companyName,
-        phone: data.phone,
-        role: 'venue',
-      });
+        registrationDate: new Date().toISOString(),
+        isVenue: true,
+      };
 
-      toast({
-        title: 'Venue Profile Created!',
-        description: 'Your venue profile has been successfully created.',
-      });
-      router.push('/venues');
+      // Non-blocking write with contextual error handling
+      setDoc(userDocRef, userDocData)
+        .then(() => {
+            toast({
+              title: 'Venue Profile Created!',
+              description: 'Your venue profile has been successfully created.',
+            });
+            router.push('/venues');
+        })
+        .catch(serverError => {
+            const permissionError = new FirestorePermissionError({
+              path: userDocRef.path,
+              operation: 'create',
+              requestResourceData: userDocData,
+            });
+            errorEmitter.emit('permission-error', permissionError);
+        });
+
     } catch (error: any) {
       console.error('Venue registration failed:', error);
       toast({
@@ -196,19 +209,32 @@ function ArtistRegistrationForm() {
       );
       const user = userCredential.user;
 
-      await setDoc(doc(firestore, 'users', user.uid), {
-        uid: user.uid,
+      const userDocRef = doc(firestore, 'users', user.uid);
+      const userDocData = {
+        id: user.uid,
         email: data.email,
-        stageName: data.stageName,
-        phone: data.phone,
-        role: 'artist',
-      });
+        registrationDate: new Date().toISOString(),
+        isVenue: false,
+      };
 
-      toast({
-        title: 'Artist Profile Created!',
-        description: 'Your artist profile has been successfully created.',
-      });
-      router.push('/artists/portal');
+      // Non-blocking write with contextual error handling
+      setDoc(userDocRef, userDocData)
+        .then(() => {
+          toast({
+            title: 'Artist Profile Created!',
+            description: 'Your artist profile has been successfully created.',
+          });
+          router.push('/artists/portal');
+        })
+        .catch(serverError => {
+          const permissionError = new FirestorePermissionError({
+            path: userDocRef.path,
+            operation: 'create',
+            requestResourceData: userDocData,
+          });
+          errorEmitter.emit('permission-error', permissionError);
+        });
+
     } catch (error: any) {
       console.error('Artist registration failed:', error);
       toast({
