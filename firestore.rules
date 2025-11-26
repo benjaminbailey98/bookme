@@ -145,7 +145,7 @@ service cloud.firestore {
        * @description Manages booking requests, which are shared between a venue and an artist.
        * @path /venue_profiles/{venueProfileId}/booking_requests/{bookingRequestId}
        * @allow (get) The venue owner or the associated artist can read a booking request.
-       * @deny (list) An artist cannot list all requests for a venue they don't own.
+       * @deny (list) An artist cannot list all requests for a venue they don't own. This is handled by the collection group rule.
        * @principle Shared Access (Closed Collaborators) based on parent document ownership.
        */
       match /booking_requests/{bookingRequestId} {
@@ -153,15 +153,17 @@ service cloud.firestore {
         allow create: if isSignedIn() && request.resource.data.venueProfileId == venueProfileId;
         allow update: if isSignedIn() && isExistingDoc() && isBookingParticipant(resource);
         allow delete: if isSignedIn() && isExistingDoc() && isBookingParticipant(resource);
-        // This is a collection group query rule. It allows a user to query the 'booking_requests'
-        // collection group as long as the query includes a 'where' clause filtering by their own uid.
-        // allow list is handled at the collection group level below
+        allow list: if isVenueOwner(venueProfileId);
       }
     }
     
+    /**
+     * @description Secures collection group queries for 'booking_requests'.
+     * @path /{path=**}/booking_requests/{bookingRequestId}
+     * @allow (list) An artist can list all booking requests where their user ID is the artistProfileId.
+     * @principle This rule ensures that collection group queries for bookings are securely filtered.
+     */
     match /{path=**}/booking_requests/{bookingRequestId} {
-        // This rule allows an artist to list all booking requests where their user ID is the artistProfileId.
-        // It secures the collection group query by ensuring the query *must* include `where('artistProfileId', '==', request.auth.uid)`.
       allow list: if isSignedIn() && request.query.where.artistProfileId == request.auth.uid;
     }
 
@@ -210,5 +212,3 @@ service cloud.firestore {
     }
   }
 }
-
-    
