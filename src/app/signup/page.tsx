@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -27,7 +28,9 @@ import { useAuth, useFirestore } from '@/firebase';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
-import { initiateEmailSignUp } from '@/firebase/non-blocking-login';
+import { doc, setDoc } from 'firebase/firestore';
+import { FirestorePermissionError } from '@/firebase/errors';
+import { errorEmitter } from '@/firebase/error-emitter';
 
 // Venue Schema
 const venueFormSchema = z.object({
@@ -50,6 +53,7 @@ type ArtistFormValues = z.infer<typeof artistFormSchema>;
 function VenueRegistrationForm() {
   const { toast } = useToast();
   const auth = useAuth();
+  const firestore = useFirestore();
   const router = useRouter();
 
   const form = useForm<VenueFormValues>({
@@ -63,16 +67,47 @@ function VenueRegistrationForm() {
   });
 
   async function onSubmit(data: VenueFormValues) {
-    if (!auth) return;
-    
-    // Non-blocking call, but we attach a .catch to handle errors.
-    initiateEmailSignUp(auth, data.email, data.password).catch((error) => {
-      console.error("Sign up error:", error);
+    if (!auth || !firestore) return;
+
+    try {
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        data.email,
+        data.password
+      );
+      const user = userCredential.user;
+
+      const userDocRef = doc(firestore, 'users', user.uid);
+      const userData = {
+        id: user.uid,
+        email: user.email,
+        registrationDate: new Date().toISOString(),
+        isVenue: true,
+      };
+      
+      setDoc(userDocRef, userData).catch((serverError) => {
+        const permissionError = new FirestorePermissionError({
+          path: userDocRef.path,
+          operation: 'create',
+          requestResourceData: userData,
+        });
+        errorEmitter.emit('permission-error', permissionError);
+      });
+      
+      toast({
+        title: 'Venue Profile Created!',
+        description: 'Your account has been created. Redirecting...',
+      });
+      router.push('/venues');
+
+    } catch (error: any) {
+      console.error('Sign up error:', error);
       if (error.code === 'auth/email-already-in-use') {
         toast({
           variant: 'destructive',
           title: 'Sign Up Failed',
-          description: 'This email is already in use. Please log in or use a different email.',
+          description:
+            'This email is already in use. Please log in or use a different email.',
         });
       } else {
         toast({
@@ -81,17 +116,7 @@ function VenueRegistrationForm() {
           description: error.message || 'An unexpected error occurred.',
         });
       }
-      // Re-enable the form if submission fails
-      form.formState.isSubmitting && form.reset(form.getValues()); 
-    });
-
-    toast({
-      title: 'Creating Venue Profile...',
-      description: 'Your account is being created. You will be redirected shortly.',
-    });
-    
-    // Redirect immediately
-    router.push('/venues');
+    }
   }
 
   return (
@@ -171,6 +196,7 @@ function VenueRegistrationForm() {
 function ArtistRegistrationForm() {
   const { toast } = useToast();
   const auth = useAuth();
+  const firestore = useFirestore();
   const router = useRouter();
   const form = useForm<ArtistFormValues>({
     resolver: zodResolver(artistFormSchema),
@@ -183,16 +209,47 @@ function ArtistRegistrationForm() {
   });
 
   async function onSubmit(data: ArtistFormValues) {
-    if (!auth) return;
-    
-    // Non-blocking call, but we attach a .catch to handle errors.
-    initiateEmailSignUp(auth, data.email, data.password).catch((error) => {
-      console.error("Sign up error:", error);
+    if (!auth || !firestore) return;
+
+    try {
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        data.email,
+        data.password
+      );
+      const user = userCredential.user;
+      
+      const userDocRef = doc(firestore, 'users', user.uid);
+      const userData = {
+        id: user.uid,
+        email: user.email,
+        registrationDate: new Date().toISOString(),
+        isVenue: false,
+      };
+
+      setDoc(userDocRef, userData).catch((serverError) => {
+        const permissionError = new FirestorePermissionError({
+          path: userDocRef.path,
+          operation: 'create',
+          requestResourceData: userData,
+        });
+        errorEmitter.emit('permission-error', permissionError);
+      });
+
+      toast({
+        title: 'Artist Profile Created!',
+        description: 'Your account is being created. You will be redirected to your portal.',
+      });
+      router.push('/artists/portal');
+
+    } catch (error: any) {
+      console.error('Sign up error:', error);
       if (error.code === 'auth/email-already-in-use') {
         toast({
           variant: 'destructive',
           title: 'Sign Up Failed',
-          description: 'This email is already in use. Please log in or use a different email.',
+          description:
+            'This email is already in use. Please log in or use a different email.',
         });
       } else {
         toast({
@@ -201,17 +258,7 @@ function ArtistRegistrationForm() {
           description: error.message || 'An unexpected error occurred.',
         });
       }
-      // Re-enable the form if submission fails
-      form.formState.isSubmitting && form.reset(form.getValues());
-    });
-
-    toast({
-      title: 'Creating Artist Profile...',
-      description: 'Your account is being created. You will be redirected to your portal.',
-    });
-
-    // Redirect immediately
-    router.push('/artists/portal');
+    }
   }
 
   return (
@@ -347,5 +394,3 @@ export default function SignupPage() {
     </div>
   );
 }
-
-    
