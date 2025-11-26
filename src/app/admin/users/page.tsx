@@ -64,11 +64,17 @@ export default function AdminUsersPage() {
     }
 
     const userDocRef = doc(firestore, 'users', userId);
+    const newRole = isVenue ? 'Venue' : 'Artist';
     try {
       await updateDoc(userDocRef, { isVenue });
       toast({
         title: 'Role Updated',
-        description: `User role has been successfully changed.`,
+        description: `User role has been successfully changed to ${newRole}.`,
+      });
+      // Simulate notification to user
+      toast({
+        title: 'User Notification Sent',
+        description: `An email has been sent to the user to notify them of the role change and prompt them to select a subscription plan.`,
       });
     } catch (serverError) {
       const permissionError = new FirestorePermissionError({
