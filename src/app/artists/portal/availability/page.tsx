@@ -6,19 +6,17 @@ import {
   addDoc,
   deleteDoc,
   doc,
-  query,
-  where,
 } from 'firebase/firestore';
 import { useFirestore, useUser, useCollection, useMemoFirebase } from '@/firebase';
 import type { ArtistAvailability } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { addDays, format, isSameDay } from 'date-fns';
+import { format, isSameDay, parseISO } from 'date-fns';
 import { PlusCircle, Trash2, XCircle } from 'lucide-react';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -45,6 +43,10 @@ export default function ArtistAvailabilityPage() {
 
   const unavailableDates =
     availabilityData?.map((a) => new Date(a.unavailableDate)) || [];
+    
+  const sortedUnavailableDates = availabilityData
+    ? [...availabilityData].sort((a, b) => new Date(a.unavailableDate).getTime() - new Date(b.unavailableDate).getTime())
+    : [];
 
   const handleDateSelect = (date: Date | undefined) => {
     if (!date) return;
@@ -193,38 +195,50 @@ export default function ArtistAvailabilityPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <Card className="md:col-span-2">
-          <CardContent className="p-2">
-            <Calendar
-              mode="multiple"
-              selected={unavailableDates}
-              onSelect={(dates) => {
-                // This component is for display only, selection logic is handled by onDayClick
-              }}
-              onDayClick={handleDateSelect}
-              className="p-0"
-              classNames={{
-                months: 'flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0',
-                month: 'space-y-4',
-                caption: 'flex justify-center pt-1 relative items-center',
-                table: 'w-full border-collapse space-y-1',
-                head_row: 'flex',
-                head_cell: 'text-muted-foreground rounded-md w-9 font-normal text-[0.8rem]',
-                row: 'flex w-full mt-2',
-                cell: 'h-9 w-9 text-center text-sm p-0 relative [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20',
-                day: 'h-9 w-9 p-0 font-normal aria-selected:opacity-100',
-                day_selected:
-                  'bg-destructive text-destructive-foreground hover:bg-destructive hover:text-destructive-foreground focus:bg-destructive focus:text-destructive-foreground',
-                day_today: 'bg-accent text-accent-foreground',
-                day_outside: 'text-muted-foreground opacity-50',
-                day_disabled: 'text-muted-foreground opacity-50',
-              }}
-            />
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2 space-y-8">
+            <Card>
+                <CardContent className="p-2 flex justify-center">
+                    <Calendar
+                      mode="multiple"
+                      selected={unavailableDates}
+                      onSelect={(dates) => {
+                        // This component is for display only, selection logic is handled by onDayClick
+                      }}
+                      onDayClick={handleDateSelect}
+                      className="p-0"
+                    />
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader>
+                    <CardTitle>Unavailable Dates</CardTitle>
+                    <CardDescription>A list of all your currently marked unavailable dates.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    {isLoading ? (
+                        <p>Loading availability...</p>
+                    ) : sortedUnavailableDates.length > 0 ? (
+                        <ul className="space-y-2">
+                        {sortedUnavailableDates.map(item => (
+                            <li key={item.id} className="flex justify-between items-center text-sm p-2 rounded-md bg-muted">
+                            <span>{format(parseISO(item.unavailableDate), 'PPP')}</span>
+                            <span>
+                                {item.isAllDay
+                                ? 'All Day'
+                                : `${item.unavailableStartTime} - ${item.unavailableEndTime}`}
+                            </span>
+                            </li>
+                        ))}
+                        </ul>
+                    ) : (
+                        <p className="text-muted-foreground">You have not set any unavailable dates.</p>
+                    )}
+                </CardContent>
+            </Card>
+        </div>
 
-        <Card>
+        <Card className="lg:col-span-1 h-fit">
           <CardHeader>
             <CardTitle>
               Set Unavailability for{' '}
