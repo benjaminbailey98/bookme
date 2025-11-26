@@ -8,6 +8,13 @@ export type ImagePlaceholder = {
   imageHint: string;
 };
 
+export interface User {
+    id: string;
+    email: string;
+    registrationDate: string;
+    isVenue?: boolean;
+}
+
 export interface ArtistAvailability {
     id: string;
     artistProfileId: string;
