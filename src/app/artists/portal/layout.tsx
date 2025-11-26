@@ -86,7 +86,7 @@ export default function ArtistPortalLayout({
             <SidebarMenu>
               {sidebarNavLinks.map((link) => (
                 <SidebarMenuItem key={link.href}>
-                  <Link href={link.href} passHref legacyBehavior>
+                  <Link href={link.href}>
                     <SidebarMenuButton
                       isActive={pathname === link.href}
                       tooltip={{ children: link.label }}
