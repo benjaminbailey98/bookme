@@ -29,15 +29,17 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import {
-  StripeConnect,
-  StripeDashboard,
   CreditCard,
   PauseCircle,
   PlayCircle,
   XCircle,
-  Loader2
+  Loader2,
+  CalendarCheck2,
+  History,
+  Info,
+  DollarSign
 } from 'lucide-react';
-import { format, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
@@ -68,10 +70,9 @@ export default function ArtistSubscriptionPage() {
   const { data: subscriptions, isLoading } = useCollection<Subscription>(subscriptionQuery);
   const subscription = subscriptions?.[0];
 
-  const getStatusVariant = (status: string | undefined) => {
+  const getStatusVariant = (status: string | undefined): 'default' | 'secondary' | 'destructive' | 'outline' => {
     switch (status?.toLowerCase()) {
       case 'active':
-        return 'default';
       case 'paid':
         return 'default';
       case 'paused':
@@ -79,7 +80,6 @@ export default function ArtistSubscriptionPage() {
       case 'inactive':
         return 'outline';
       case 'canceled':
-          return 'destructive';
       case 'delinquent':
         return 'destructive';
       default:
@@ -111,85 +111,97 @@ export default function ArtistSubscriptionPage() {
       }
   }
 
-  const renderSubscriptionCard = () => {
+  const renderSubscriptionDetails = () => {
     if (isLoading) {
-        return <Loader2 className="mx-auto h-8 w-8 animate-spin text-muted-foreground" />;
+      return <div className="flex justify-center items-center h-24"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
     }
 
     if (!subscription) {
-        return (
-            <div className="text-center text-muted-foreground">
-                <p>You do not have an active subscription.</p>
-                <Button className="mt-4">Start Subscription</Button>
-            </div>
-        )
+      return (
+        <div className="text-center py-8">
+          <p className="text-muted-foreground mb-4">You do not have an active subscription.</p>
+          <Button>Start Your Subscription</Button>
+        </div>
+      );
     }
+    
+    const overviewItems = [
+      {
+        icon: Info,
+        label: 'Account Status',
+        value: subscription.accountStatus,
+        isBadge: true,
+      },
+      {
+        icon: DollarSign,
+        label: 'Payment Status',
+        value: subscription.paymentStatus,
+        isBadge: true,
+      },
+      {
+        icon: CalendarCheck2,
+        label: 'Next Due Date',
+        value: format(subscription.dueDate.toDate(), 'PPP'),
+        isBadge: false,
+      },
+      {
+        icon: History,
+        label: 'Member Since',
+        value: format(subscription.startDate.toDate(), 'PPP'),
+        isBadge: false,
+      },
+    ];
 
     return (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-            <div>
-                <p className="text-sm text-muted-foreground">Status</p>
-                <Badge variant={getStatusVariant(subscription.accountStatus)} className="mt-1 text-lg">
-                    {subscription.accountStatus}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {overviewItems.map(item => (
+            <Card key={item.label} className="flex flex-col justify-center items-center text-center p-4">
+               <item.icon className="h-8 w-8 text-primary mb-2" />
+               <p className="text-sm font-medium text-muted-foreground">{item.label}</p>
+              {item.isBadge ? (
+                <Badge variant={getStatusVariant(item.value)} className="mt-1 text-base">
+                  {item.value}
                 </Badge>
-            </div>
-            <div>
-                <p className="text-sm text-muted-foreground">Next Due Date</p>
-                <p className="font-semibold text-lg">{format(subscription.dueDate.toDate(), 'PPP')}</p>
-            </div>
-             <div>
-                <p className="text-sm text-muted-foreground">Payment Status</p>
-                <Badge variant={getStatusVariant(subscription.paymentStatus)} className="mt-1 text-lg">
-                   {subscription.paymentStatus}
-                </Badge>
-            </div>
-             <div>
-                <p className="text-sm text-muted-foreground">Start Date</p>
-                <p className="font-semibold text-lg">{format(subscription.startDate.toDate(), 'PPP')}</p>
-            </div>
+              ) : (
+                <p className="font-semibold text-xl">{item.value}</p>
+              )}
+            </Card>
+          ))}
         </div>
-    )
-  }
+    );
+  };
 
   return (
-    <div className="container mx-auto max-w-4xl py-12 md:py-20 space-y-8">
+    <div className="container mx-auto max-w-6xl py-12 md:py-20 space-y-8">
       <div className="space-y-2 text-center">
         <h1 className="text-3xl md:text-4xl font-bold tracking-tighter font-headline">
-          My Subscription
+          Subscription & Billing
         </h1>
         <p className="text-muted-foreground max-w-2xl mx-auto">
-          View and manage your Vibe Request artist subscription.
+          View and manage your Vibe Request artist subscription and payment details.
         </p>
       </div>
+      
+      {renderSubscriptionDetails()}
 
-      <Card>
-        <CardHeader>
-            <CardTitle>Overview</CardTitle>
-            <CardDescription>Your current subscription details.</CardDescription>
-        </CardHeader>
-        <CardContent>
-            {renderSubscriptionCard()}
-        </CardContent>
-      </Card>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
         <Card>
             <CardHeader>
                 <CardTitle>Manage Subscription</CardTitle>
-                <CardDescription>Pause, resume, or cancel your plan.</CardDescription>
+                <CardDescription>Pause, resume, or cancel your plan at any time.</CardDescription>
             </CardHeader>
-            <CardContent className="flex flex-col sm:flex-row gap-4">
-                 <Button onClick={() => handleSubscriptionAction('paused')} disabled={subscription?.accountStatus === 'paused' || isActionLoading} variant="outline" className="w-full">
-                    {isActionLoading && subscription?.accountStatus !== 'paused' ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <PauseCircle className="mr-2 h-4 w-4" />}
+            <CardContent className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                 <Button onClick={() => handleSubscriptionAction('paused')} disabled={subscription?.accountStatus === 'paused' || isLoading || isActionLoading} variant="outline" className="w-full">
+                    <PauseCircle className="mr-2 h-4 w-4" />
                     Pause
                  </Button>
-                 <Button onClick={() => handleSubscriptionAction('active')} disabled={subscription?.accountStatus === 'active' || isActionLoading} className="w-full">
-                     {isActionLoading && subscription?.accountStatus !== 'active' ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <PlayCircle className="mr-2 h-4 w-4" />}
+                 <Button onClick={() => handleSubscriptionAction('active')} disabled={subscription?.accountStatus === 'active' || isLoading || isActionLoading} className="w-full">
+                     <PlayCircle className="mr-2 h-4 w-4" />
                     Resume
                  </Button>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                     <Button variant="destructive" disabled={isActionLoading} className="w-full">
+                     <Button variant="destructive" disabled={isLoading || isActionLoading} className="w-full">
                         <XCircle className="mr-2 h-4 w-4" />
                         Cancel
                     </Button>
@@ -211,10 +223,11 @@ export default function ArtistSubscriptionPage() {
                 </AlertDialog>
             </CardContent>
         </Card>
+        
         <Card>
             <CardHeader>
                 <CardTitle>Payment Integration</CardTitle>
-                <CardDescription>Connect with Stripe to receive payouts for your gigs.</CardDescription>
+                <CardDescription>Connect with Stripe to receive secure payouts for your gigs.</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col sm:flex-row gap-4">
                 <Button className="w-full">
@@ -246,7 +259,7 @@ export default function ArtistSubscriptionPage() {
                 <TableBody>
                     {isLoading ? (
                          <TableRow>
-                            <TableCell colSpan={4} className="text-center">
+                            <TableCell colSpan={4} className="h-24 text-center">
                                 <Loader2 className="mx-auto h-8 w-8 animate-spin text-muted-foreground" />
                             </TableCell>
                         </TableRow>
@@ -261,7 +274,7 @@ export default function ArtistSubscriptionPage() {
                         ))
                     ) : (
                          <TableRow>
-                            <TableCell colSpan={4} className="text-center text-muted-foreground">
+                            <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
                                 No payment history found.
                             </TableCell>
                         </TableRow>
