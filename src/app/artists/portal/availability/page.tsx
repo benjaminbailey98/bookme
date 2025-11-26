@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   collection,
   addDoc,
@@ -39,7 +39,9 @@ export default function ArtistAvailabilityPage() {
 
   const availabilityQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
-    return query(collection(firestore, 'artist_profiles', user.uid, 'availability'));
+    return query(
+      collection(firestore, 'artist_profiles', user.uid, 'availability')
+    );
   }, [firestore, user]);
   
   const { data: availabilityData, isLoading } = useCollection<ArtistAvailability>(availabilityQuery);
@@ -311,5 +313,3 @@ export default function ArtistAvailabilityPage() {
     </div>
   );
 }
-
-    
