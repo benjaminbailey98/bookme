@@ -60,7 +60,7 @@ export default function ArtistsPage() {
       )}
 
       {!isLoading && artists && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {artists.map((artist) => (
             <Card key={artist.id} className="flex flex-col">
               <CardContent className="p-6 flex-grow">
@@ -116,7 +116,7 @@ export default function ArtistsPage() {
                   </div>
                 </div>
               </CardContent>
-              <CardFooter className="p-6 pt-0 flex justify-between">
+              <CardFooter className="p-6 pt-0 flex justify-between items-center">
                 {artist.artistPerformingVideoUrl ? (
                   <Dialog>
                     <DialogTrigger asChild>
