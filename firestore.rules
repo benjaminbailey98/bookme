@@ -90,7 +90,7 @@ service cloud.firestore {
     function isBookingParticipant(bookingRequestDoc) {
       // The artist owner check depends on the denormalized `artistProfileId`
       // on the booking request document itself.
-      return isVenueOwner(bookingRequestDoc.data.venueProfileId) || isArtistOwner(bookingRequestDoc.data.artistProfileId);
+      return isVenueOwner(bookingRequestDoc.data.venueProfileId) || isOwner(bookingRequestDoc.data.artistProfileId);
     }
 
     //-------------------------------------------------------------------------
@@ -150,7 +150,8 @@ service cloud.firestore {
        */
       match /booking_requests/{bookingRequestId} {
         allow get: if isSignedIn() && isBookingParticipant(resource);
-        allow list: if isVenueOwner(venueProfileId);
+        // This is a collection group query rule.
+        allow list: if isSignedIn() && request.query.get('artistProfileId') == request.auth.uid;
         allow create: if isSignedIn() && request.resource.data.venueProfileId == venueProfileId;
         allow update: if isSignedIn() && isExistingDoc() && isBookingParticipant(resource);
         allow delete: if isSignedIn() && isExistingDoc() && isBookingParticipant(resource);
@@ -180,9 +181,9 @@ service cloud.firestore {
       match /availability/{availabilityId} {
         allow get: if true;
         allow list: if true;
-        allow create: if isArtistOwner(artistProfileId);
-        allow update: if isExistingDoc() && isArtistOwner(artistProfileId);
-        allow delete: if isExistingDoc() && isArtistOwner(artistProfileId);
+        allow create: if isOwner(artistProfileId);
+        allow update: if isExistingDoc() && isOwner(artistProfileId);
+        allow delete: if isExistingDoc() && isOwner(artistProfileId);
       }
     }
 
@@ -202,5 +203,3 @@ service cloud.firestore {
     }
   }
 }
-
-    
