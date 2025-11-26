@@ -9,6 +9,7 @@ import { Menu } from 'lucide-react';
 
 const navLinks = [
   { href: '/artists', label: 'Browse Artists' },
+  { href: '/artists/portal', label: 'Artist Portal' },
   { href: '/venues', label: 'Venue Portal' },
   { href: '/admin', label: 'Admin' },
 ];
