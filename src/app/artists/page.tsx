@@ -1,7 +1,9 @@
 
 'use client';
 
-import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, query } from 'firebase/firestore';
+import type { ArtistProfile } from '@/lib/types';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import {
@@ -12,7 +14,13 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Youtube, Instagram, Twitter, PlayCircle } from 'lucide-react';
+import {
+  Youtube,
+  Instagram,
+  Facebook,
+  PlayCircle,
+  Loader2,
+} from 'lucide-react';
 import Link from 'next/link';
 import {
   Dialog,
@@ -22,59 +30,17 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 
-const artists = [
-  {
-    id: 'benji-muziq',
-    stageName: 'Benji Muziq',
-    bio: 'Soulful singer-songwriter with a knack for heartfelt lyrics and captivating melodies. Perfect for intimate events and weddings.',
-    socials: {
-      youtube: 'https://youtube.com',
-      instagram: 'https://instagram.com',
-      twitter: 'https://twitter.com',
-    },
-    imageId: 'artist-1',
-    videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
-  },
-  {
-    id: 'vibe-setters',
-    stageName: 'Vibe Setters',
-    bio: 'High-energy party band that guarantees a packed dance floor. Playing all your favorite hits from the 70s to today.',
-    socials: {
-      youtube: 'https://youtube.com',
-      instagram: 'https://instagram.com',
-      twitter: 'https://twitter.com',
-    },
-    imageId: 'artist-3',
-    videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
-  },
-  {
-    id: 'dj-smooth',
-    stageName: 'DJ Smooth',
-    bio: 'Versatile DJ who can spin everything from hip-hop to house. Known for seamless transitions and reading the crowd.',
-    socials: {
-      youtube: 'https://youtube.com',
-      instagram: 'https://instagram.com',
-      twitter: 'https://twitter.com',
-    },
-    imageId: 'artist-2',
-    videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
-  },
-  {
-    id: 'acoustic-soul',
-    stageName: 'Acoustic Soul',
-    description: 'A female acoustic guitarist and singer.',
-    bio: 'A solo performer creating a chill and soulful atmosphere with her acoustic guitar and smooth vocals. Ideal for cafes, lounges, and private parties.',
-    socials: {
-      youtube: 'https://youtube.com',
-      instagram: 'https://instagram.com',
-      twitter: 'https://twitter.com',
-    },
-    imageId: 'artist-4',
-    videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
-  },
-];
-
 export default function ArtistsPage() {
+  const firestore = useFirestore();
+
+  const artistsQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'artist_profiles'));
+  }, [firestore]);
+
+  const { data: artists, isLoading } =
+    useCollection<ArtistProfile>(artistsQuery);
+
   return (
     <div className="container mx-auto py-12 md:py-20">
       <div className="space-y-2 text-center mb-12">
@@ -87,85 +53,98 @@ export default function ArtistsPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {artists.map((artist) => {
-          const image = PlaceHolderImages.find(
-            (img) => img.id === artist.imageId
-          );
-          return (
+      {isLoading && (
+        <div className="flex justify-center items-center h-64">
+          <Loader2 className="h-12 w-12 animate-spin text-muted-foreground" />
+        </div>
+      )}
+
+      {!isLoading && artists && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {artists.map((artist) => (
             <Card key={artist.id} className="flex flex-col">
               <CardContent className="p-6 flex-grow">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                   <div className="flex flex-col items-center sm:items-start text-center sm:text-left">
-                    {image && (
-                      <div className="w-32 h-32 relative mb-4">
-                        <Image
-                          src={image.imageUrl}
-                          alt={artist.stageName}
-                          fill
-                          className="rounded-full object-cover"
-                          data-ai-hint={image.imageHint}
-                        />
-                      </div>
-                    )}
+                    <div className="w-32 h-32 relative mb-4">
+                      <Image
+                        src={
+                          artist.artistProfilePictureUrl ||
+                          `https://picsum.photos/seed/${artist.id}/300/300`
+                        }
+                        alt={artist.stageName}
+                        fill
+                        className="rounded-full object-cover"
+                      />
+                    </div>
                     <div className="flex items-center gap-4">
-                      <Link
-                        href={artist.socials.youtube}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-muted-foreground hover:text-primary"
-                      >
-                        <Youtube className="h-6 w-6" />
-                      </Link>
-                      <Link
-                        href={artist.socials.instagram}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-muted-foreground hover:text-primary"
-                      >
-                        <Instagram className="h-6 w-6" />
-                      </Link>
-                      <Link
-                        href={artist.socials.twitter}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-muted-foreground hover:text-primary"
-                      >
-                        <Twitter className="h-6 w-6" />
-                      </Link>
+                      {artist.youtubeUrl && (
+                        <Link
+                          href={artist.youtubeUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-muted-foreground hover:text-primary"
+                        >
+                          <Youtube className="h-6 w-6" />
+                        </Link>
+                      )}
+                      {artist.instagramUrl && (
+                        <Link
+                          href={artist.instagramUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-muted-foreground hover:text-primary"
+                        >
+                          <Instagram className="h-6 w-6" />
+                        </Link>
+                      )}
+                      {artist.facebookUrl && (
+                        <Link
+                          href={artist.facebookUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-muted-foreground hover:text-primary"
+                        >
+                          <Facebook className="h-6 w-6" />
+                        </Link>
+                      )}
                     </div>
                   </div>
                   <div className="sm:col-span-2">
                     <CardTitle className="mb-2">{artist.stageName}</CardTitle>
-                    <CardDescription>{artist.bio}</CardDescription>
+                    <CardDescription>{artist.shortBio}</CardDescription>
                   </div>
                 </div>
               </CardContent>
               <CardFooter className="p-6 pt-0 flex justify-between">
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button variant="outline">
-                      <PlayCircle className="mr-2 h-4 w-4" />
-                      Watch Video
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-3xl">
-                    <DialogHeader>
-                      <DialogTitle>{artist.stageName} - Video</DialogTitle>
-                    </DialogHeader>
-                    <div className="aspect-video">
-                      <iframe
-                        width="100%"
-                        height="100%"
-                        src={artist.videoUrl}
-                        title="YouTube video player"
-                        frameBorder="0"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                      ></iframe>
-                    </div>
-                  </DialogContent>
-                </Dialog>
+                {artist.artistPerformingVideoUrl ? (
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button variant="outline">
+                        <PlayCircle className="mr-2 h-4 w-4" />
+                        Watch Video
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-3xl">
+                      <DialogHeader>
+                        <DialogTitle>{artist.stageName} - Video</DialogTitle>
+                      </DialogHeader>
+                      <div className="aspect-video">
+                        <iframe
+                          width="100%"
+                          height="100%"
+                          src={artist.artistPerformingVideoUrl}
+                          title="YouTube video player"
+                          frameBorder="0"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        ></iframe>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                ) : (
+                  <div /> // Empty div to maintain spacing
+                )}
                 <Button asChild>
                   <Link href={`/book?artist=${artist.id}`}>
                     Book {artist.stageName}
@@ -173,9 +152,15 @@ export default function ArtistsPage() {
                 </Button>
               </CardFooter>
             </Card>
-          );
-        })}
-      </div>
+          ))}
+        </div>
+      )}
+
+      {!isLoading && (!artists || artists.length === 0) && (
+        <div className="text-center text-muted-foreground py-10">
+          <p>No artists have been added yet. Check back soon!</p>
+        </div>
+      )}
     </div>
   );
 }
