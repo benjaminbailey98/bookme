@@ -184,7 +184,7 @@ export default function VenueBookingsPage() {
                 bookings.map((booking) => (
                   <TableRow key={booking.id}>
                     <TableCell className="font-medium">
-                      {format(booking.eventDate.toDate(), 'PPP')}
+                      {booking.eventDate.toDate ? format(booking.eventDate.toDate(), 'PPP') : format(new Date(booking.eventDate), 'PPP')}
                     </TableCell>
                     <TableCell>{booking.artistProfileId}</TableCell>
                     <TableCell>
@@ -193,7 +193,7 @@ export default function VenueBookingsPage() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right space-x-2">
-                       {booking.status === 'confirmed' && new Date() > booking.eventDate.toDate() && (
+                       {booking.status === 'confirmed' && new Date() > (booking.eventDate.toDate ? booking.eventDate.toDate() : new Date(booking.eventDate)) && (
                          <Button
                             variant="outline"
                             size="sm"

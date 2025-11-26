@@ -68,7 +68,7 @@ export interface BookingRequest {
     id: string;
     venueProfileId: string;
     artistProfileId: string;
-    eventDate: Timestamp | Date; // Allow Date for form submission
+    eventDate: Timestamp; 
     eventTime: string;
     lengthOfEvent: number;
     lengthOfPerformance: number;
