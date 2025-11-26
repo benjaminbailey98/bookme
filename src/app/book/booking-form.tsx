@@ -50,6 +50,7 @@ import {
 import { useState, useTransition } from 'react';
 import { getSuggestions } from './actions';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { useRouter } from 'next/navigation';
 
 const bookingFormSchema = z.object({
   eventDate: z.date({
@@ -129,6 +130,7 @@ export function BookingForm() {
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   const [aiNotes, setAiNotes] = useState<string | null>(null);
+  const router = useRouter();
 
   const form = useForm<BookingFormValues>({
     resolver: zodResolver(bookingFormSchema),
@@ -186,6 +188,14 @@ export function BookingForm() {
         });
       }
     });
+  }
+  
+  function handleArtistSelect(value: string) {
+    if (value === 'browse') {
+      router.push('/artists');
+    } else {
+      form.setValue('artist', value);
+    }
   }
 
   return (
@@ -635,35 +645,36 @@ export function BookingForm() {
               )}
             </div>
              <FormField
-                control={form.control}
-                name="artist"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="flex items-center gap-2">
-                      Select an Artist
-                       <TooltipWrapper content={formFields.find(f => f.name === 'artist')?.tooltip || ''}>
-                        <HelpCircle className="h-4 w-4 text-muted-foreground" />
-                      </TooltipWrapper>
-                    </FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Choose an artist" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="artist-1">Benji Muziq</SelectItem>
-                        <SelectItem value="artist-2">Vibe Setters</SelectItem>
-                        <SelectItem value="artist-3">DJ Smooth</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              control={form.control}
+              name="artist"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="flex items-center gap-2">
+                    Select an Artist
+                     <TooltipWrapper content={formFields.find(f => f.name === 'artist')?.tooltip || ''}>
+                      <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                    </TooltipWrapper>
+                  </FormLabel>
+                  <Select
+                    onValueChange={handleArtistSelect}
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Choose an artist" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="artist-1">Benji Muziq</SelectItem>
+                      <SelectItem value="artist-2">Vibe Setters</SelectItem>
+                      <SelectItem value="dj-smooth">DJ Smooth</SelectItem>
+                      <SelectItem value="browse">Browse from artist catalog...</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           </CardContent>
         </Card>
 
