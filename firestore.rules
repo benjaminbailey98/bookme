@@ -205,10 +205,8 @@ service cloud.firestore {
       allow get: if isSignedIn() && (isOwner(resource.data.referredUserId) || isOwner(resource.data.referrerUserId));
       allow list: if false;
       allow create: if isSignedIn() && (request.resource.data.referrerUserId == null || request.resource.data.referrerUserId == request.auth.uid);
-      update: if false;
-      delete: if false;
+      allow update: if false;
+      allow delete: if false;
     }
   }
 }
-
-    
