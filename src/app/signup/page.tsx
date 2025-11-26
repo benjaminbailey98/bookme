@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -28,7 +29,6 @@ import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 // Venue Schema
 const venueFormSchema = z.object({
@@ -296,8 +296,8 @@ export default function SignupPage() {
         </p>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-8 items-start">
-        <Card className="flex flex-col">
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 items-start">
+        <Card className="flex flex-col lg:col-span-1">
           <CardHeader>
             <CardTitle>One-Time Booking</CardTitle>
             <CardDescription>
@@ -312,38 +312,33 @@ export default function SignupPage() {
           </CardContent>
         </Card>
 
-        <Card>
-          <Tabs defaultValue="venue">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="venue">Venue</TabsTrigger>
-              <TabsTrigger value="artist">Artist</TabsTrigger>
-            </TabsList>
-            <TabsContent value="venue">
-              <CardHeader>
-                <CardTitle>Create a Venue Profile</CardTitle>
-                <CardDescription>
-                  Register your venue to easily manage bookings and connect with
-                  artists.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <VenueRegistrationForm />
-              </CardContent>
-            </TabsContent>
-            <TabsContent value="artist">
-              <CardHeader>
-                <CardTitle>Create an Artist Profile</CardTitle>
-                <CardDescription>
-                  Join our roster of talented artists to get booked for events.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ArtistRegistrationForm />
-              </CardContent>
-            </TabsContent>
-          </Tabs>
+        <Card className="lg:col-span-1">
+          <CardHeader>
+            <CardTitle>Register as a Venue</CardTitle>
+            <CardDescription>
+              Register your venue to easily manage bookings and connect with
+              artists.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <VenueRegistrationForm />
+          </CardContent>
+        </Card>
+
+        <Card className="lg:col-span-1">
+          <CardHeader>
+            <CardTitle>Register as an Artist</CardTitle>
+            <CardDescription>
+              Join our roster of talented artists to get booked for events.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ArtistRegistrationForm />
+          </CardContent>
         </Card>
       </div>
     </div>
   );
 }
+
+    
