@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "User": {
@@ -113,6 +114,10 @@
           "type": "string",
           "description": "Unique identifier for the ArtistProfile entity."
         },
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user who owns this profile. (Relationship: User 1:1 ArtistProfile)"
+        },
         "stageName": {
           "type": "string",
           "description": "Artist's stage name."
@@ -189,6 +194,7 @@
       },
       "required": [
         "id",
+        "userId",
         "stageName",
         "realName",
         "personalEmail",
@@ -476,11 +482,11 @@
           "schema": {
             "$ref": "#/backend/entities/ArtistProfile"
           },
-          "description": "Stores artist profiles. This is a top level collection and would need security rules that determine how the id is set. Includes denormalized 'artistId' (which should be the same as 'userId') field for authorization.",
+          "description": "Stores artist profiles. The document ID `{artistProfileId}` should be the same as the user's UID. Includes a denormalized `userId` field for authorization.",
           "params": [
             {
               "name": "artistProfileId",
-              "description": "The unique identifier for the artist profile."
+              "description": "The unique identifier for the artist profile, which is also the user's UID."
             }
           ]
         }
@@ -565,3 +571,5 @@
     "reasoning": "The Firestore data structure is designed to support the Vibe Request application's features, prioritizing authorization independence, clarity, and scalability. User and profile data are separated to optimize security and data access. Booking requests, artist availability, and subscriptions are structured to maintain clear relationships and facilitate efficient queries.\n\nAuthorization Independence is achieved through the use of path-based ownership and denormalization. For example, booking requests are stored under the venue profile ID, allowing direct access without needing to fetch parent documents. The denormalization strategy would be critical in the BookingRequest to include the venue's members (if venues could have members other than the owner), or important fields from the ArtistProfile, allowing the rules to authorize the write based on fields in the `request.resource.data` without needing to `get()` other documents. This is key for atomic operations.\n\nQAPs (Rules are not filters) are supported through structural segregation. User-owned data (VenueProfile, ArtistProfile, Subscriptions) are stored in paths unique to the user, enabling secure list operations using path-based rules. Collaborative scenarios, if applicable, would use membership maps denormalized into relevant documents. Booking requests, while associated with both venues and artists, are primarily organized under the venue to simplify access control for venue-related operations, with the option to duplicate relevant data to the artist's profile for efficient artist-side access and filtering."
   }
 }
+
+    

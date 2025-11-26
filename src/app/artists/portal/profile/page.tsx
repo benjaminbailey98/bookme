@@ -2,7 +2,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import * as z from 'zod';
 import {
   Form,
@@ -70,7 +70,6 @@ export default function ArtistProfilePage() {
   });
 
   const { fields, append, remove } =
-    // @ts-ignore TODO: Fix this type error
     useFieldArray({
     name: 'additionalLinks',
     control: form.control,
@@ -370,3 +369,5 @@ export default function ArtistProfilePage() {
     </div>
   );
 }
+
+    

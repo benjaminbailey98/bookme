@@ -1,3 +1,4 @@
+
 /**
  * This ruleset enforces a strict user-ownership and profile-based authorization model for the Vibe Request application.
  *
@@ -70,24 +71,26 @@ service cloud.firestore {
     }
 
     /**
-     * CRITICAL: This is a placeholder. The 'ArtistProfile' entity is missing a 'userId' or 'ownerId' field.
-     * This function will always return false until the schema is updated.
-     * All rules dependent on this check are currently more restrictive than intended.
+     * Retrieves the owner `userId` from an artist profile document.
      */
-    function isArtistOwner() {
-      // TODO: Uncomment and adapt once 'artist_profiles' documents contain an owner field (e.g., 'userId').
-      // let ownerId = get(/databases/$(database)/documents/artist_profiles/$(artistProfileId)).data.userId;
-      // return isOwner(ownerId);
-      return false;
+    function getArtistOwnerId(artistProfileId) {
+      return get(/databases/$(database)/documents/artist_profiles/$(artistProfileId)).data.userId;
+    }
+    
+    /**
+     * Checks if the requesting user owns the specified artist profile.
+     */
+    function isArtistOwner(artistProfileId) {
+      return isOwner(getArtistOwnerId(artistProfileId));
     }
 
     /**
      * Checks if the user is a participant (either venue or artist) in a booking request.
      */
     function isBookingParticipant(bookingRequestDoc) {
-      // Note: `isArtistOwner` will currently always return false due to the missing schema field.
-      // This means only venue owners can currently access booking requests.
-      return isVenueOwner(bookingRequestDoc.data.venueProfileId) || isArtistOwner();
+      // The artist owner check depends on the denormalized `artistProfileId`
+      // on the booking request document itself.
+      return isVenueOwner(bookingRequestDoc.data.venueProfileId) || isArtistOwner(bookingRequestDoc.data.artistProfileId);
     }
 
     //-------------------------------------------------------------------------
@@ -141,7 +144,7 @@ service cloud.firestore {
       /**
        * @description Manages booking requests, which are shared between a venue and an artist.
        * @path /venue_profiles/{venueProfileId}/booking_requests/{bookingRequestId}
-       * @allow (get) The venue owner can read a booking request.
+       * @allow (get) The venue owner or the associated artist can read a booking request.
        * @deny (list) An artist cannot list all requests for a venue they don't own.
        * @principle Shared Access (Closed Collaborators) based on parent document ownership.
        */
@@ -155,42 +158,38 @@ service cloud.firestore {
     }
 
     /**
-     * @description Manages public artist profiles. Writes are currently disabled.
+     * @description Manages public artist profiles.
      * @path /artist_profiles/{artistProfileId}
      * @allow (get, list) Any client (signed-in or anonymous) can view artist profiles.
-     * @deny (create, update, delete) All write operations are disabled until the schema is fixed.
-     * @principle Public Read with Owner-Only Writes (partially implemented).
+     * @principle Public Read with Owner-Only Writes.
      */
     match /artist_profiles/{artistProfileId} {
       allow get: if true;
       allow list: if true;
-      // CRITICAL: Cannot implement owner-only writes. The 'ArtistProfile' entity is missing an 'ownerId' or 'userId' field.
-      allow create: if false; // TODO: Add owner validation once the schema is updated with an ownership field (e.g., request.resource.data.userId == request.auth.uid).
-      allow update: if false; // TODO: Add owner validation (e.g., isOwnerOfExistingDoc(resource.data.userId)).
-      allow delete: if false; // TODO: Add owner validation (e.g., isOwnerOfExistingDoc(resource.data.userId)).
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if isOwnerOfExistingDoc(resource.data.userId) && request.resource.data.userId == resource.data.userId;
+      allow delete: if isOwnerOfExistingDoc(resource.data.userId);
 
       /**
-       * @description Manages an artist's availability. All access is currently disabled.
+       * @description Manages an artist's availability.
        * @path /artist_profiles/{artistProfileId}/availability/{availabilityId}
-       * @allow (all) No operations are currently allowed.
-       * @deny (all) All operations are denied because ownership of the parent artist profile cannot be determined.
-       * @principle Ownership via parent document (currently blocked).
+       * @allow (read) Publicly readable to allow for booking checks.
+       * @allow (write) Only the artist who owns the profile can manage their availability.
+       * @principle Ownership via parent document.
        */
       match /availability/{availabilityId} {
-        // CRITICAL: Cannot determine owner of the parent 'ArtistProfile' document to secure this subcollection.
-        // All access is denied until the 'ArtistProfile' schema is updated with an ownership field.
-        allow get: if false; // TODO: Change to `if isArtistOwner(artistProfileId) || true;` for owner-only or public reads.
-        allow list: if false; // TODO: Change to `if isArtistOwner(artistProfileId) || true;` for owner-only or public reads.
-        allow create: if false; // TODO: Change to `if isArtistOwner(artistProfileId);`.
-        allow update: if false; // TODO: Change to `if isArtistOwner(artistProfileId) && isExistingDoc();`.
-        allow delete: if false; // TODO: Change to `if isArtistOwner(artistProfileId) && isExistingDoc();`.
+        allow get: if true;
+        allow list: if true;
+        allow create: if isArtistOwner(artistProfileId);
+        allow update: if isExistingDoc() && isArtistOwner(artistProfileId);
+        allow delete: if isExistingDoc() && isArtistOwner(artistProfileId);
       }
     }
 
     /**
      * @description Manages referral records.
      * @path /referrals/{referralId}
-     * @allow (create) Any signed-in user can create a referral.
+     * @allow (create) Any signed-in user can create a referral for themselves.
      * @deny (update) Referrals are immutable once created.
      * @principle Shared Access between the referrer and the referred user.
      */
@@ -203,3 +202,5 @@ service cloud.firestore {
     }
   }
 }
+
+    
