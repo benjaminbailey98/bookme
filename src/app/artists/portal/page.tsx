@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useUser } from '@/firebase';
@@ -59,7 +60,7 @@ export default function ArtistPortalPage() {
             <div className="text-2xl font-bold">3</div>
             <p className="text-xs text-muted-foreground">in the next 30 days</p>
           </CardContent>
-        Card>
+        </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">New Requests</CardTitle>
