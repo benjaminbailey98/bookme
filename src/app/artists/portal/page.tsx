@@ -5,7 +5,7 @@ import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebas
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Building, Calendar, DollarSign, Music, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import type { BookingRequest } from '@/lib/types';
 import { collectionGroup, query, where, Timestamp } from 'firebase/firestore';
 import { differenceInDays } from 'date-fns';
