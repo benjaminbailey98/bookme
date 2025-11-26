@@ -29,6 +29,7 @@ import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
+import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 // Venue Schema
 const venueFormSchema = z.object({
@@ -82,30 +83,29 @@ function VenueRegistrationForm() {
         isVenue: true,
       };
 
-      // Non-blocking write with contextual error handling
-      setDoc(userDocRef, userDocData)
-        .then(() => {
-            toast({
-              title: 'Venue Profile Created!',
-              description: 'Your venue profile has been successfully created.',
-            });
-            router.push('/venues');
-        })
-        .catch(serverError => {
-            const permissionError = new FirestorePermissionError({
-              path: userDocRef.path,
-              operation: 'create',
-              requestResourceData: userDocData,
-            });
-            errorEmitter.emit('permission-error', permissionError);
-        });
+      // Use the non-blocking fire-and-forget method for setting the document
+      setDocumentNonBlocking(userDocRef, userDocData, { merge: true });
+
+      toast({
+        title: 'Venue Profile Created!',
+        description: 'Your venue profile has been successfully created.',
+      });
+      router.push('/venues');
 
     } catch (error: any) {
       console.error('Venue registration failed:', error);
+      
+      let description = 'An unexpected error occurred. Please try again.';
+      if (error.code === 'auth/email-already-in-use') {
+        description = 'This email is already registered. Please login or use a different email.';
+      } else if (error.message) {
+        description = error.message;
+      }
+      
       toast({
         variant: 'destructive',
         title: 'Registration Failed',
-        description: error.message || 'An unexpected error occurred.',
+        description: description,
       });
     }
   }
@@ -217,30 +217,29 @@ function ArtistRegistrationForm() {
         isVenue: false,
       };
 
-      // Non-blocking write with contextual error handling
-      setDoc(userDocRef, userDocData)
-        .then(() => {
-          toast({
-            title: 'Artist Profile Created!',
-            description: 'Your artist profile has been successfully created.',
-          });
-          router.push('/artists/portal');
-        })
-        .catch(serverError => {
-          const permissionError = new FirestorePermissionError({
-            path: userDocRef.path,
-            operation: 'create',
-            requestResourceData: userDocData,
-          });
-          errorEmitter.emit('permission-error', permissionError);
-        });
+      // Use the non-blocking fire-and-forget method for setting the document
+      setDocumentNonBlocking(userDocRef, userDocData, { merge: true });
+
+      toast({
+        title: 'Artist Profile Created!',
+        description: 'Your artist profile has been successfully created.',
+      });
+      router.push('/artists/portal');
 
     } catch (error: any) {
       console.error('Artist registration failed:', error);
+      
+      let description = 'An unexpected error occurred. Please try again.';
+      if (error.code === 'auth/email-already-in-use') {
+        description = 'This email is already registered. Please login or use a different email.';
+      } else if (error.message) {
+        description = error.message;
+      }
+
       toast({
         variant: 'destructive',
         title: 'Registration Failed',
-        description: error.message || 'An unexpected error occurred.',
+        description: description,
       });
     }
   }
