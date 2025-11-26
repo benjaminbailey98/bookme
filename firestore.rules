@@ -164,7 +164,7 @@ service cloud.firestore {
      * @principle This rule ensures that collection group queries for bookings are securely filtered.
      */
     match /{path=**}/booking_requests/{bookingRequestId} {
-        allow list: if isSignedIn() && request.query.where.artistProfileId == request.auth.uid;
+      allow list: if isSignedIn() && request.query.where.artistProfileId == request.auth.uid;
     }
 
     /**
@@ -211,5 +211,3 @@ service cloud.firestore {
     }
   }
 }
-
-    
