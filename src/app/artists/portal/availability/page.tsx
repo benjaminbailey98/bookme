@@ -37,12 +37,12 @@ export default function ArtistAvailabilityPage() {
   const [isAllDay, setIsAllDay] = useState(false);
   const [timeRanges, setTimeRanges] = useState([{ from: '', to: '' }]);
 
-  const availabilityCollectionRef = useMemoFirebase(() => {
+  const availabilityQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
-    return collection(firestore, 'artist_profiles', user.uid, 'availability');
+    return query(collection(firestore, 'artist_profiles', user.uid, 'availability'));
   }, [firestore, user]);
   
-  const { data: availabilityData, isLoading } = useCollection<ArtistAvailability>(availabilityCollectionRef);
+  const { data: availabilityData, isLoading } = useCollection<ArtistAvailability>(availabilityQuery);
 
   const unavailableDates =
     availabilityData?.map((a) => new Date(a.unavailableDate)) || [];

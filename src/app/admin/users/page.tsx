@@ -5,6 +5,7 @@ import {
   doc,
   updateDoc,
   writeBatch,
+  query,
 } from 'firebase/firestore';
 import {
   useFirestore,
@@ -46,12 +47,12 @@ export default function AdminUsersPage() {
   const firestore = useFirestore();
   const { toast } = useToast();
 
-  const usersCollectionRef = useMemoFirebase(() => {
+  const usersQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    return collection(firestore, 'users');
+    return query(collection(firestore, 'users'));
   }, [firestore]);
 
-  const { data: users, isLoading } = useCollection<User>(usersCollectionRef);
+  const { data: users, isLoading } = useCollection<User>(usersQuery);
 
   const handleChangeRole = async (userId: string, isVenue: boolean) => {
     if (!adminUser || !firestore) {

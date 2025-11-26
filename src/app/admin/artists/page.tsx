@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { collection } from 'firebase/firestore';
+import { collection, query } from 'firebase/firestore';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import type { ArtistProfile } from '@/lib/types';
 import { Button } from '@/components/ui/button';
@@ -35,13 +35,13 @@ export default function AdminArtistsPage() {
   const firestore = useFirestore();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  const artistsCollectionRef = useMemoFirebase(() => {
+  const artistsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    return collection(firestore, 'artist_profiles');
+    return query(collection(firestore, 'artist_profiles'));
   }, [firestore]);
 
   const { data: artists, isLoading } =
-    useCollection<ArtistProfile>(artistsCollectionRef);
+    useCollection<ArtistProfile>(artistsQuery);
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">

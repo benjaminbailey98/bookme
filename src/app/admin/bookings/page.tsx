@@ -28,7 +28,6 @@ export default function AdminBookingsPage() {
 
   const bookingsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    // This is a collection group query to get all bookings across all venues
     return query(collectionGroup(firestore, 'booking_requests'));
   }, [firestore]);
 

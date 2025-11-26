@@ -1,6 +1,6 @@
 'use client';
 
-import { collection } from 'firebase/firestore';
+import { collection, query } from 'firebase/firestore';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import type { VenueProfile } from '@/lib/types';
 import { Button } from '@/components/ui/button';
@@ -24,12 +24,12 @@ import { Loader2, PlusCircle } from 'lucide-react';
 export default function AdminVenuesPage() {
   const firestore = useFirestore();
 
-  const venuesCollectionRef = useMemoFirebase(() => {
+  const venuesQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    return collection(firestore, 'venue_profiles');
+    return query(collection(firestore, 'venue_profiles'));
   }, [firestore]);
 
-  const { data: venues, isLoading } = useCollection<VenueProfile>(venuesCollectionRef);
+  const { data: venues, isLoading } = useCollection<VenueProfile>(venuesQuery);
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">

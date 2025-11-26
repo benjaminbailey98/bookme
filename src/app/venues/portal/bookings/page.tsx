@@ -60,22 +60,18 @@ export default function VenueBookingsPage() {
   const [review, setReview] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const bookingsCollectionRef = useMemoFirebase(() => {
+  const bookingsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
     // Assuming venue profiles are keyed by user.uid
-    return collection(firestore, 'venue_profiles', user.uid, 'booking_requests');
+    return query(collection(firestore, 'venue_profiles', user.uid, 'booking_requests'));
   }, [firestore, user]);
 
   const { data: bookings, isLoading } =
-    useCollection<BookingRequest>(bookingsCollectionRef);
+    useCollection<BookingRequest>(bookingsQuery);
 
   const handleStatusChange = async (bookingId: string, newStatus: string) => {
-    if (!user || !firestore || !bookingsCollectionRef) return;
-    const bookingDocRef = doc(
-      firestore,
-      bookingsCollectionRef.path,
-      bookingId
-    );
+    if (!user || !firestore) return;
+    const bookingDocRef = doc(firestore, 'venue_profiles', user.uid, 'booking_requests', bookingId);
     try {
       await updateDoc(bookingDocRef, { status: newStatus });
       toast({
