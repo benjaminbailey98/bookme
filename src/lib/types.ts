@@ -1,5 +1,4 @@
 
-
 import type { Timestamp } from 'firebase/firestore';
 
 export type ImagePlaceholder = {
@@ -43,5 +42,14 @@ export interface BookingRequest {
     referralInfo?: string;
     status?: 'pending' | 'confirmed' | 'declined';
     venueOwnerId?: string;
-  }
+}
   
+export interface Subscription {
+    id: string;
+    userId: string;
+    startDate: Timestamp;
+    dueDate: Timestamp;
+    accountStatus: 'active' | 'inactive' | 'paused' | 'canceled';
+    paymentHistory: string[];
+    paymentStatus: 'paid' | 'delinquent';
+}
