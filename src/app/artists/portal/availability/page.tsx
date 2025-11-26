@@ -21,8 +21,6 @@ import { PlusCircle, Trash2, XCircle } from 'lucide-react';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
 
-type AvailabilityForDate = Omit<ArtistAvailability, 'artistProfileId' | 'unavailableDate'>[];
-
 export default function ArtistAvailabilityPage() {
   const { toast } = useToast();
   const { user } = useUser();
@@ -184,7 +182,7 @@ export default function ArtistAvailabilityPage() {
 
 
   return (
-    <div className="container mx-auto max-w-6xl py-12 md:py-20">
+    <div className="container mx-auto max-w-7xl py-12 md:py-20 space-y-8">
       <div className="space-y-2 mb-12">
         <h1 className="text-3xl md:text-4xl font-bold tracking-tighter font-headline text-center">
           My Availability
@@ -196,47 +194,17 @@ export default function ArtistAvailabilityPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-8">
-            <Card>
-                <CardContent className="p-2 flex justify-center">
-                    <Calendar
-                      mode="multiple"
-                      selected={unavailableDates}
-                      onSelect={(dates) => {
-                        // This component is for display only, selection logic is handled by onDayClick
-                      }}
-                      onDayClick={handleDateSelect}
-                      className="p-0"
-                    />
-                </CardContent>
-            </Card>
-            <Card>
-                <CardHeader>
-                    <CardTitle>Unavailable Dates</CardTitle>
-                    <CardDescription>A list of all your currently marked unavailable dates.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    {isLoading ? (
-                        <p>Loading availability...</p>
-                    ) : sortedUnavailableDates.length > 0 ? (
-                        <ul className="space-y-2">
-                        {sortedUnavailableDates.map(item => (
-                            <li key={item.id} className="flex justify-between items-center text-sm p-2 rounded-md bg-muted">
-                            <span>{format(parseISO(item.unavailableDate), 'PPP')}</span>
-                            <span>
-                                {item.isAllDay
-                                ? 'All Day'
-                                : `${item.unavailableStartTime} - ${item.unavailableEndTime}`}
-                            </span>
-                            </li>
-                        ))}
-                        </ul>
-                    ) : (
-                        <p className="text-muted-foreground">You have not set any unavailable dates.</p>
-                    )}
-                </CardContent>
-            </Card>
-        </div>
+        <Card className="lg:col-span-2 flex justify-center items-center">
+          <Calendar
+            mode="multiple"
+            selected={unavailableDates}
+            onSelect={(dates) => {
+              // This component is for display only, selection logic is handled by onDayClick
+            }}
+            onDayClick={handleDateSelect}
+            className="p-0"
+          />
+        </Card>
 
         <Card className="lg:col-span-1 h-fit">
           <CardHeader>
@@ -304,6 +272,33 @@ export default function ArtistAvailabilityPage() {
           </CardContent>
         </Card>
       </div>
+      
+      <Card>
+          <CardHeader>
+              <CardTitle>Unavailable Dates</CardTitle>
+              <CardDescription>A list of all your currently marked unavailable dates.</CardDescription>
+          </CardHeader>
+          <CardContent>
+              {isLoading ? (
+                  <p>Loading availability...</p>
+              ) : sortedUnavailableDates.length > 0 ? (
+                  <ul className="space-y-2">
+                  {sortedUnavailableDates.map(item => (
+                      <li key={item.id} className="flex justify-between items-center text-sm p-2 rounded-md bg-muted">
+                      <span>{format(parseISO(item.unavailableDate), 'PPP')}</span>
+                      <span>
+                          {item.isAllDay
+                          ? 'All Day'
+                          : `${item.unavailableStartTime} - ${item.unavailableEndTime}`}
+                      </span>
+                      </li>
+                  ))}
+                  </ul>
+              ) : (
+                  <p className="text-muted-foreground">You have not set any unavailable dates.</p>
+              )}
+          </CardContent>
+      </Card>
     </div>
   );
 }
