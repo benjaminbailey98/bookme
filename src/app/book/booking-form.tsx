@@ -1,3 +1,4 @@
+
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -47,10 +48,10 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { useState, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { getSuggestions } from './actions';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 const bookingFormSchema = z.object({
   eventDate: z.date({
@@ -131,6 +132,7 @@ export function BookingForm() {
   const [isPending, startTransition] = useTransition();
   const [aiNotes, setAiNotes] = useState<string | null>(null);
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const form = useForm<BookingFormValues>({
     resolver: zodResolver(bookingFormSchema),
@@ -138,6 +140,14 @@ export function BookingForm() {
       isTicketed: false,
     },
   });
+
+  useEffect(() => {
+    const artistId = searchParams.get('artist');
+    if (artistId) {
+      form.setValue('artist', artistId);
+    }
+  }, [searchParams, form]);
+
 
   const isTicketed = form.watch('isTicketed');
 
@@ -657,7 +667,7 @@ export function BookingForm() {
                   </FormLabel>
                   <Select
                     onValueChange={handleArtistSelect}
-                    defaultValue={field.value}
+                    value={field.value}
                   >
                     <FormControl>
                       <SelectTrigger>
@@ -665,9 +675,10 @@ export function BookingForm() {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="artist-1">Benji Muziq</SelectItem>
-                      <SelectItem value="artist-2">Vibe Setters</SelectItem>
+                      <SelectItem value="benji-muziq">Benji Muziq</SelectItem>
+                      <SelectItem value="vibe-setters">Vibe Setters</SelectItem>
                       <SelectItem value="dj-smooth">DJ Smooth</SelectItem>
+                      <SelectItem value="acoustic-soul">Acoustic Soul</SelectItem>
                       <SelectItem value="browse">Browse from artist catalog...</SelectItem>
                     </SelectContent>
                   </Select>

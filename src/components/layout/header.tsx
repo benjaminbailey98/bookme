@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -7,7 +8,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Menu } from 'lucide-react';
 
 const navLinks = [
-  { href: '/artists', label: 'Artist Portal' },
+  { href: '/artists', label: 'Browse Artists' },
   { href: '/venues', label: 'Venue Portal' },
   { href: '/admin', label: 'Admin' },
 ];
