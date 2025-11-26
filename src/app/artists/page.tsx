@@ -1,10 +1,26 @@
 
+'use client';
+
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Youtube, Instagram, Twitter } from 'lucide-react';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Youtube, Instagram, Twitter, PlayCircle } from 'lucide-react';
 import Link from 'next/link';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 
 const artists = [
   {
@@ -17,6 +33,7 @@ const artists = [
       twitter: 'https://twitter.com',
     },
     imageId: 'artist-1',
+    videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
   },
   {
     id: 'vibe-setters',
@@ -28,6 +45,7 @@ const artists = [
       twitter: 'https://twitter.com',
     },
     imageId: 'artist-3',
+    videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
   },
   {
     id: 'dj-smooth',
@@ -39,6 +57,7 @@ const artists = [
       twitter: 'https://twitter.com',
     },
     imageId: 'artist-2',
+    videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
   },
   {
     id: 'acoustic-soul',
@@ -51,7 +70,8 @@ const artists = [
       twitter: 'https://twitter.com',
     },
     imageId: 'artist-4',
-  }
+    videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+  },
 ];
 
 export default function ArtistsPage() {
@@ -62,13 +82,16 @@ export default function ArtistsPage() {
           Meet Our Artists
         </h1>
         <p className="text-muted-foreground max-w-2xl mx-auto">
-          A curated selection of the best local talent. Find the perfect vibe for your next event.
+          A curated selection of the best local talent. Find the perfect vibe
+          for your next event.
         </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {artists.map((artist) => {
-          const image = PlaceHolderImages.find((img) => img.id === artist.imageId);
+          const image = PlaceHolderImages.find(
+            (img) => img.id === artist.imageId
+          );
           return (
             <Card key={artist.id} className="flex flex-col">
               <CardContent className="p-6 flex-grow">
@@ -86,13 +109,28 @@ export default function ArtistsPage() {
                       </div>
                     )}
                     <div className="flex items-center gap-4">
-                      <Link href={artist.socials.youtube} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary">
+                      <Link
+                        href={artist.socials.youtube}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-muted-foreground hover:text-primary"
+                      >
                         <Youtube className="h-6 w-6" />
                       </Link>
-                       <Link href={artist.socials.instagram} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary">
+                      <Link
+                        href={artist.socials.instagram}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-muted-foreground hover:text-primary"
+                      >
                         <Instagram className="h-6 w-6" />
                       </Link>
-                       <Link href={artist.socials.twitter} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary">
+                      <Link
+                        href={artist.socials.twitter}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-muted-foreground hover:text-primary"
+                      >
                         <Twitter className="h-6 w-6" />
                       </Link>
                     </div>
@@ -103,9 +141,35 @@ export default function ArtistsPage() {
                   </div>
                 </div>
               </CardContent>
-              <CardFooter className="p-6 pt-0">
-                 <Button asChild className="w-full">
-                  <Link href={`/book?artist=${artist.id}`}>Book {artist.stageName}</Link>
+              <CardFooter className="p-6 pt-0 flex justify-between">
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button variant="outline">
+                      <PlayCircle className="mr-2 h-4 w-4" />
+                      Watch Video
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-3xl">
+                    <DialogHeader>
+                      <DialogTitle>{artist.stageName} - Video</DialogTitle>
+                    </DialogHeader>
+                    <div className="aspect-video">
+                      <iframe
+                        width="100%"
+                        height="100%"
+                        src={artist.videoUrl}
+                        title="YouTube video player"
+                        frameBorder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      ></iframe>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+                <Button asChild>
+                  <Link href={`/book?artist=${artist.id}`}>
+                    Book {artist.stageName}
+                  </Link>
                 </Button>
               </CardFooter>
             </Card>
