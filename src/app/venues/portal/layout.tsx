@@ -20,7 +20,6 @@ import {
   LogOut,
   ListMusic,
   CreditCard,
-  Star,
 } from 'lucide-react';
 import { Icons } from '@/components/icons';
 import { useAuth } from '@/firebase';
@@ -37,7 +36,6 @@ const sidebarNavLinks = [
     label: 'Subscription',
     icon: CreditCard,
   },
-  { href: '/venues/portal/reviews', label: 'Reviews', icon: Star },
 ];
 
 export default function VenuePortalLayout({

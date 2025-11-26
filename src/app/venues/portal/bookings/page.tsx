@@ -62,6 +62,7 @@ export default function VenueBookingsPage() {
 
   const bookingsCollectionRef = useMemoFirebase(() => {
     if (!firestore || !user) return null;
+    // Assuming venue profiles are keyed by user.uid
     return collection(firestore, 'venue_profiles', user.uid, 'booking_requests');
   }, [firestore, user]);
 
@@ -69,12 +70,10 @@ export default function VenueBookingsPage() {
     useCollection<BookingRequest>(bookingsCollectionRef);
 
   const handleStatusChange = async (bookingId: string, newStatus: string) => {
-    if (!user || !firestore) return;
+    if (!user || !firestore || !bookingsCollectionRef) return;
     const bookingDocRef = doc(
       firestore,
-      'venue_profiles',
-      user.uid,
-      'booking_requests',
+      bookingsCollectionRef.path,
       bookingId
     );
     try {
@@ -98,29 +97,33 @@ export default function VenueBookingsPage() {
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: 'Please select a rating and write a review.',
+        description: 'Please select a rating to submit your review.',
       });
       return;
     }
     setIsSubmitting(true);
+    
+    // Create a new review document
     const reviewData = {
       bookingRequestId: selectedBooking.id,
       artistProfileId: selectedBooking.artistProfileId,
-      venueProfileId: user.uid,
+      venueProfileId: user.uid, // Venue's user ID is their profile ID
       rating,
       reviewText: review,
-      createdAt: new Date(),
+      createdAt: new Date(), // Using client-side date, consider server timestamp
     };
+
     const reviewsCollection = collection(firestore, 'reviews');
     try {
       await addDoc(reviewsCollection, reviewData);
       toast({ title: 'Review Submitted', description: 'Thank you for your feedback!' });
+      // Close dialog and reset state
       setRating(0);
       setReview('');
-      setSelectedBooking(null);
+      setSelectedBooking(null); // This will cause the dialog to close if it's tied to this state
     } catch (serverError) {
        const permissionError = new FirestorePermissionError({
-        path: reviewsCollection.path,
+        path: 'reviews', // Path for creation
         operation: 'create',
         requestResourceData: reviewData,
       });
@@ -128,7 +131,6 @@ export default function VenueBookingsPage() {
     } finally {
         setIsSubmitting(false);
     }
-
   };
 
   const getStatusVariant = (status?: string) => {
@@ -195,7 +197,7 @@ export default function VenueBookingsPage() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right space-x-2">
-                      {booking.status === 'confirmed' && new Date() > booking.eventDate.toDate() && (
+                       {booking.status === 'confirmed' && new Date() > booking.eventDate.toDate() && (
                          <Button
                             variant="outline"
                             size="sm"
@@ -205,9 +207,13 @@ export default function VenueBookingsPage() {
                       )}
                       {booking.status === 'completed' && (
                         <Dialog
-                          onOpenChange={(open) =>
-                            !open && setSelectedBooking(null)
-                          }
+                          onOpenChange={(open) => {
+                            if (!open) {
+                              setSelectedBooking(null);
+                              setRating(0);
+                              setReview('');
+                            }
+                          }}
                         >
                           <DialogTrigger asChild>
                             <Button
@@ -243,10 +249,10 @@ export default function VenueBookingsPage() {
                                 </div>
                               </div>
                               <div className="space-y-2">
-                                <Label htmlFor="review">Review</Label>
+                                <Label htmlFor="review">Review (Optional)</Label>
                                 <Textarea
                                   id="review"
-                                  placeholder="How was the performance?"
+                                  placeholder="How was the performance? What did you like?"
                                   value={review}
                                   onChange={(e) => setReview(e.target.value)}
                                 />
@@ -287,7 +293,7 @@ export default function VenueBookingsPage() {
                   <TableRow>
                     <TableCell
                       colSpan={4}
-                      className="text-center text-muted-foreground"
+                      className="text-center text-muted-foreground py-10"
                     >
                       You have no booking requests yet.
                     </TableCell>
