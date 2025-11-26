@@ -194,7 +194,7 @@ service cloud.firestore {
       allow get: if isSignedIn() && (isOwner(resource.data.referredUserId) || isOwner(resource.data.referrerUserId));
       allow list: if false;
       allow create: if isSignedIn() && (request.resource.data.referrerUserId == null || request.resource.data.referrerUserId == request.auth.uid);
-      update, delete: if false;
+      allow update, delete: if false;
     }
 
     /**
@@ -202,7 +202,7 @@ service cloud.firestore {
      * @path /reviews/{reviewId}
      * @allow (get) Reviews are public to all.
      * @allow (list) Reviews are public and can be listed by anyone.
-     * @allow (create) Only the venue owner can create a review for a booking they are part of.
+     * @allow (create) Only the venue owner who created the booking can create a review.
      * @deny (update, delete) Reviews are immutable.
      */
     match /reviews/{reviewId} {
