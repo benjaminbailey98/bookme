@@ -203,6 +203,7 @@ export default function ArtistAvailabilityPage() {
             }}
             onDayClick={handleDateSelect}
             className="p-0"
+            numberOfMonths={2}
           />
         </Card>
 
@@ -314,3 +315,5 @@ declare module '@/lib/types' {
         isAllDay?: boolean;
     }
 }
+
+    
