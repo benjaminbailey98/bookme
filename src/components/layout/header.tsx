@@ -18,7 +18,7 @@ const navLinks = [
 ];
 
 export default function Header() {
-  const { user, loading } = useUser();
+  const { user, isUserLoading: loading } = useUser();
   const auth = useAuth();
   const { toast } = useToast();
 
