@@ -1,3 +1,4 @@
+
 'use client';
 
 import { collection, query } from 'firebase/firestore';
