@@ -150,8 +150,9 @@ service cloud.firestore {
        */
       match /booking_requests/{bookingRequestId} {
         allow get: if isSignedIn() && isBookingParticipant(resource);
-        // This is a collection group query rule.
-        allow list: if isSignedIn() && request.query.where.get('artistProfileId', '==', request.auth.uid) != null;
+        // This is a collection group query rule. It allows a user to query the 'booking_requests'
+        // collection group as long as the query includes a 'where' clause filtering by their own uid.
+        allow list: if isSignedIn() && resource.data.artistProfileId == request.auth.uid;
         allow create: if isSignedIn() && request.resource.data.venueProfileId == venueProfileId;
         allow update: if isSignedIn() && isExistingDoc() && isBookingParticipant(resource);
         allow delete: if isSignedIn() && isExistingDoc() && isBookingParticipant(resource);
