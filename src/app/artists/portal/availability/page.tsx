@@ -7,6 +7,10 @@ import {
   addDoc,
   deleteDoc,
   doc,
+  query,
+  where,
+  getDocs,
+  writeBatch,
 } from 'firebase/firestore';
 import { useFirestore, useUser, useCollection, useMemoFirebase } from '@/firebase';
 import type { ArtistAvailability } from '@/lib/types';
@@ -95,35 +99,26 @@ export default function ArtistAvailabilityPage() {
       return;
     }
 
+    const formattedDate = format(selectedDate, 'yyyy-MM-dd');
+  
     // First, clear existing availability for the selected date
-    const existingEntries = availabilityData?.filter(a => isSameDay(new Date(a.unavailableDate), selectedDate)) || [];
-    for (const entry of existingEntries) {
-      const docRef = doc(firestore, 'artist_profiles', user.uid, 'availability', entry.id);
-      deleteDoc(docRef).catch(serverError => {
-        const permissionError = new FirestorePermissionError({
-          path: docRef.path,
-          operation: 'delete',
-        });
-        errorEmitter.emit('permission-error', permissionError);
-      })
-    }
+    const q = query(collection(firestore, 'artist_profiles', user.uid, 'availability'), where("unavailableDate", "==", formattedDate));
+    const querySnapshot = await getDocs(q);
+    const batch = writeBatch(firestore);
+    querySnapshot.forEach(doc => {
+        batch.delete(doc.ref);
+    });
 
     const baseData = {
       artistProfileId: user.uid,
-      unavailableDate: format(selectedDate, 'yyyy-MM-dd'),
+      unavailableDate: formattedDate,
     };
 
     if (isAllDay) {
         const newEntry = { ...baseData, isAllDay: true };
-        addDoc(collection(firestore, 'artist_profiles', user.uid, 'availability'), newEntry)
-            .catch(serverError => {
-                const permissionError = new FirestorePermissionError({
-                    path: `artist_profiles/${user.uid}/availability`,
-                    operation: 'create',
-                    requestResourceData: newEntry,
-                });
-                errorEmitter.emit('permission-error', permissionError);
-            });
+        const docRef = doc(collection(firestore, 'artist_profiles', user.uid, 'availability'));
+        batch.set(docRef, newEntry);
+
     } else {
         for (const range of timeRanges) {
             if (range.from && range.to) {
@@ -133,52 +128,60 @@ export default function ArtistAvailabilityPage() {
                     unavailableStartTime: range.from,
                     unavailableEndTime: range.to,
                 };
-                addDoc(collection(firestore, 'artist_profiles', user.uid, 'availability'), newEntry)
-                    .catch(serverError => {
-                        const permissionError = new FirestorePermissionError({
-                            path: `artist_profiles/${user.uid}/availability`,
-                            operation: 'create',
-                            requestResourceData: newEntry,
-                        });
-                        errorEmitter.emit('permission-error', permissionError);
-                    });
+                const docRef = doc(collection(firestore, 'artist_profiles', user.uid, 'availability'));
+                batch.set(docRef, newEntry);
             }
         }
     }
 
-    toast({
-      title: 'Availability Saved',
-      description: `Your schedule for ${format(
-        selectedDate,
-        'PPP'
-      )} has been updated.`,
-    });
+    batch.commit().then(() => {
+        toast({
+            title: 'Availability Saved',
+            description: `Your schedule for ${format(
+              selectedDate,
+              'PPP'
+            )} has been updated.`,
+          });
+    }).catch(serverError => {
+        const permissionError = new FirestorePermissionError({
+            path: `artist_profiles/${user.uid}/availability`,
+            operation: 'write',
+        });
+        errorEmitter.emit('permission-error', permissionError);
+    })
   };
 
   const handleClearAvailabilityForDay = async () => {
      if (!user || !firestore || !selectedDate) return;
-      const existingEntries = availabilityData?.filter(a => isSameDay(new Date(a.unavailableDate), selectedDate)) || [];
-      if (existingEntries.length === 0) {
+      const formattedDate = format(selectedDate, 'yyyy-MM-dd');
+      const q = query(collection(firestore, 'artist_profiles', user.uid, 'availability'), where("unavailableDate", "==", formattedDate));
+      const querySnapshot = await getDocs(q);
+      
+      if (querySnapshot.empty) {
         toast({ title: "You are already available on this day."});
         return;
       }
-      for (const entry of existingEntries) {
-        const docRef = doc(firestore, 'artist_profiles', user.uid, 'availability', entry.id);
-        deleteDoc(docRef).catch(serverError => {
+      
+      const batch = writeBatch(firestore);
+      querySnapshot.forEach((doc) => {
+        batch.delete(doc.ref);
+      });
+
+      await batch.commit().then(() => {
+          toast({
+              title: "Availability Cleared",
+              description: `You are now marked as available for ${format(selectedDate, 'PPP')}.`,
+              variant: "default"
+          });
+          setIsAllDay(false);
+          setTimeRanges([{ from: '', to: '' }]);
+      }).catch(serverError => {
            const permissionError = new FirestorePermissionError({
-                path: docRef.path,
+                path: `artist_profiles/${user.uid}/availability`,
                 operation: 'delete',
             });
             errorEmitter.emit('permission-error', permissionError);
-        });
-      }
-      toast({
-          title: "Availability Cleared",
-          description: `You are now marked as available for ${format(selectedDate, 'PPP')}.`,
-          variant: "default"
       });
-      setIsAllDay(false);
-      setTimeRanges([{ from: '', to: '' }]);
   }
 
 
@@ -309,14 +312,4 @@ export default function ArtistAvailabilityPage() {
   );
 }
 
-// Helper type for lib
-declare module '@/lib/types' {
-    interface ArtistAvailability {
-        id: string;
-        artistProfileId: string;
-        unavailableDate: string; // ISO Date string
-        unavailableStartTime?: string;
-        unavailableEndTime?: string;
-        isAllDay?: boolean;
-    }
-}
+    

@@ -160,11 +160,11 @@ service cloud.firestore {
     /**
      * @description Secures collection group queries for 'booking_requests'.
      * @path /{path=**}/booking_requests/{bookingRequestId}
-     * @allow (list) An artist can list all booking requests where their user ID is the artistProfileId.
+     * @allow (list) An artist can list all booking requests where their user ID is the artistProfileId, by enforcing that the query must filter by their UID.
      * @principle This rule ensures that collection group queries for bookings are securely filtered.
      */
     match /{path=**}/booking_requests/{bookingRequestId} {
-      allow list: if isSignedIn() && resource.data.artistProfileId == request.auth.uid;
+        allow list: if isSignedIn() && request.query.where.artistProfileId == request.auth.uid;
     }
 
     /**
@@ -190,9 +190,9 @@ service cloud.firestore {
       match /availability/{availabilityId} {
         allow get: if true;
         allow list: if true;
-        allow create: if isOwner(artistProfileId);
-        allow update: if isExistingDoc() && isOwner(artistProfileId);
-        allow delete: if isExistingDoc() && isOwner(artistProfileId);
+        allow create: if isArtistOwner(artistProfileId);
+        allow update: if isExistingDoc() && isArtistOwner(artistProfileId);
+        allow delete: if isExistingDoc() && isArtistOwner(artistProfileId);
       }
     }
 
@@ -207,8 +207,9 @@ service cloud.firestore {
       allow get: if isSignedIn() && (isOwner(resource.data.referredUserId) || isOwner(resource.data.referrerUserId));
       allow list: if false;
       allow create: if isSignedIn() && (request.resource.data.referrerUserId == null || request.resource.data.referrerUserId == request.auth.uid);
-      allow update: if false;
-      allow delete: if false;
+      update, delete: if false;
     }
   }
 }
+
+    
