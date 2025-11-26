@@ -126,15 +126,16 @@ export default function ArtistProfilePage() {
     }
 
     const { newPassword, confirmPassword, ...profileData } = data;
-    const profileRef = doc(firestore, 'artist_profiles', user.uid);
     
+    if (!artistProfileRef) return;
+
     const finalProfileData = {
       ...profileData,
       userId: user.uid,
       id: user.uid, // Explicitly set id for consistency with schema
     };
 
-    setDoc(profileRef, finalProfileData, { merge: true })
+    setDoc(artistProfileRef, finalProfileData, { merge: true })
       .then(() => {
         toast({
           title: 'Profile Updated!',
@@ -143,7 +144,7 @@ export default function ArtistProfilePage() {
       })
       .catch((serverError) => {
         const permissionError = new FirestorePermissionError({
-          path: profileRef.path,
+          path: artistProfileRef.path,
           operation: 'update',
           requestResourceData: finalProfileData,
         });
@@ -452,3 +453,5 @@ export default function ArtistProfilePage() {
     </div>
   );
 }
+
+    
