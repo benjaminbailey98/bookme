@@ -15,6 +15,42 @@ export interface User {
     isVenue?: boolean;
 }
 
+export interface VenueProfile {
+    id: string;
+    userId: string;
+    companyName: string;
+    companyEmail: string;
+    companyPhone: string;
+    companyLogoUrl?: string;
+    companyAddress: string;
+    businessHours: string;
+    contactTitle: string;
+    contactName: string;
+    contactEmail: string;
+    contactPhone: string;
+}
+
+export interface ArtistProfile {
+    id: string;
+    userId: string;
+    stageName: string;
+    realName: string;
+    personalEmail: string;
+    personalPhone: string;
+    shortBio: string;
+    websiteUrl?: string;
+    instagramUrl?: string;
+    facebookUrl?: string;
+    youtubeUrl?: string;
+    spotifyUrl?: string;
+    managementCompanyName?: string;
+    managementContactPerson?: string;
+    managementEmail?: string;
+    managementPhone?: string;
+    artistProfilePictureUrl?: string;
+    artistPerformingVideoUrl?: string;
+}
+
 export interface ArtistAvailability {
     id: string;
     artistProfileId: string;
