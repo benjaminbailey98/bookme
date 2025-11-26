@@ -42,5 +42,6 @@ export interface BookingRequest {
     soundProvidedBy: 'venue' | 'artist';
     referralInfo?: string;
     status?: 'pending' | 'confirmed' | 'declined';
+    venueOwnerId?: string;
   }
   
