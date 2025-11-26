@@ -113,10 +113,7 @@ service cloud.firestore {
        * @principle Enforces strict ownership for sensitive, nested user data.
        */
       match /subscriptions/{subscriptionId} {
-        allow get, list: if isOwner(userId);
-        allow create: if isOwner(userId) && request.resource.data.userId == userId;
-        allow update: if isOwnerOfExistingDoc(userId) && request.resource.data.userId == resource.data.userId;
-        allow delete: if isOwnerOfExistingDoc(userId);
+        allow read, write: if isOwner(userId);
       }
     }
 
@@ -203,12 +200,14 @@ service cloud.firestore {
     /**
      * @description Manages artist reviews from venues.
      * @path /reviews/{reviewId}
-     * @allow (read) Reviews are public to all.
+     * @allow (get) Reviews are public to all.
+     * @allow (list) Venues can list the reviews they have written.
      * @allow (create) Only the venue owner can create a review for a booking they are part of.
      * @deny (update, delete) Reviews are immutable.
      */
     match /reviews/{reviewId} {
-      allow get, list: if true;
+      allow get: if true;
+      allow list: if isSignedIn() && request.query.where.venueProfileId == request.auth.uid;
       allow create: if isSignedIn() && isOwner(request.resource.data.venueProfileId);
       allow update, delete: if false;
     }
