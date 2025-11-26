@@ -23,34 +23,72 @@ import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { PasswordInput } from '@/components/ui/password-input';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth, useFirestore } from '@/firebase';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
+import { useRouter } from 'next/navigation';
+import { Loader2 } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
+// Venue Schema
 const venueFormSchema = z.object({
   companyName: z.string().min(1, 'Company name is required.'),
-  companyEmail: z.string().email('Please enter a valid email.'),
-  companyPhone: z.string().min(1, 'Company phone is required.'),
+  email: z.string().email('Please enter a valid email.'),
+  phone: z.string().min(1, 'Company phone is required.'),
   password: z.string().min(8, 'Password must be at least 8 characters.'),
 });
-
 type VenueFormValues = z.infer<typeof venueFormSchema>;
+
+// Artist Schema
+const artistFormSchema = z.object({
+  stageName: z.string().min(1, 'Stage name is required.'),
+  email: z.string().email('Please enter a valid email.'),
+  phone: z.string().min(1, 'Phone number is required.'),
+  password: z.string().min(8, 'Password must be at least 8 characters.'),
+});
+type ArtistFormValues = z.infer<typeof artistFormSchema>;
 
 function VenueRegistrationForm() {
   const { toast } = useToast();
+  const auth = useAuth();
+  const firestore = useFirestore();
+  const router = useRouter();
+
   const form = useForm<VenueFormValues>({
     resolver: zodResolver(venueFormSchema),
   });
 
-  function onSubmit(data: VenueFormValues) {
-    console.log(data);
-    toast({
-      title: 'Venue Profile Created!',
-      description: 'Your venue profile has been successfully created.',
-    });
-    form.reset({
-      companyName: '',
-      companyEmail: '',
-      companyPhone: '',
-      password: '',
-    });
+  async function onSubmit(data: VenueFormValues) {
+    if (!auth || !firestore) return;
+    try {
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        data.email,
+        data.password
+      );
+      const user = userCredential.user;
+
+      await setDoc(doc(firestore, 'users', user.uid), {
+        uid: user.uid,
+        email: data.email,
+        companyName: data.companyName,
+        phone: data.phone,
+        role: 'venue',
+      });
+
+      toast({
+        title: 'Venue Profile Created!',
+        description: 'Your venue profile has been successfully created.',
+      });
+      router.push('/venues');
+    } catch (error: any) {
+      console.error('Venue registration failed:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Registration Failed',
+        description: error.message || 'An unexpected error occurred.',
+      });
+    }
   }
 
   return (
@@ -71,7 +109,7 @@ function VenueRegistrationForm() {
         />
         <FormField
           control={form.control}
-          name="companyEmail"
+          name="email"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Company Email</FormLabel>
@@ -88,7 +126,7 @@ function VenueRegistrationForm() {
         />
         <FormField
           control={form.control}
-          name="companyPhone"
+          name="phone"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Company Phone</FormLabel>
@@ -112,8 +150,131 @@ function VenueRegistrationForm() {
             </FormItem>
           )}
         />
-        <Button type="submit" className="w-full">
+        <Button
+          type="submit"
+          className="w-full"
+          disabled={form.formState.isSubmitting}
+        >
+          {form.formState.isSubmitting && (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          )}
           Create Venue Profile
+        </Button>
+      </form>
+    </Form>
+  );
+}
+
+function ArtistRegistrationForm() {
+  const { toast } = useToast();
+  const auth = useAuth();
+  const firestore = useFirestore();
+  const router = useRouter();
+  const form = useForm<ArtistFormValues>({
+    resolver: zodResolver(artistFormSchema),
+  });
+
+  async function onSubmit(data: ArtistFormValues) {
+    if (!auth || !firestore) return;
+    try {
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        data.email,
+        data.password
+      );
+      const user = userCredential.user;
+
+      await setDoc(doc(firestore, 'users', user.uid), {
+        uid: user.uid,
+        email: data.email,
+        stageName: data.stageName,
+        phone: data.phone,
+        role: 'artist',
+      });
+
+      toast({
+        title: 'Artist Profile Created!',
+        description: 'Your artist profile has been successfully created.',
+      });
+      router.push('/artists/portal');
+    } catch (error: any) {
+      console.error('Artist registration failed:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Registration Failed',
+        description: error.message || 'An unexpected error occurred.',
+      });
+    }
+  }
+
+  return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <FormField
+          control={form.control}
+          name="stageName"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Stage Name</FormLabel>
+              <FormControl>
+                <Input placeholder="DJ Smooth" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="email"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Contact Email</FormLabel>
+              <FormControl>
+                <Input
+                  type="email"
+                  placeholder="contact@djsmooth.com"
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="phone"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Contact Phone</FormLabel>
+              <FormControl>
+                <Input placeholder="(555) 123-4567" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="password"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Create Password</FormLabel>
+              <FormControl>
+                <PasswordInput placeholder="********" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <Button
+          type="submit"
+          className="w-full"
+          disabled={form.formState.isSubmitting}
+        >
+          {form.formState.isSubmitting && (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          )}
+          Create Artist Profile
         </Button>
       </form>
     </Form>
@@ -128,7 +289,10 @@ export default function SignupPage() {
           Join Vibe Request
         </h1>
         <p className="text-muted-foreground max-w-2xl mx-auto">
-          Choose the option that best fits your needs.
+          Choose the option that best fits your needs. Already have an account?{' '}
+          <Link href="/login" className="text-primary hover:underline">
+            Login
+          </Link>
         </p>
       </div>
 
@@ -149,16 +313,35 @@ export default function SignupPage() {
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle>Create a Venue Profile</CardTitle>
-            <CardDescription>
-              Register your venue to easily manage bookings and connect with
-              artists.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <VenueRegistrationForm />
-          </CardContent>
+          <Tabs defaultValue="venue">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="venue">Venue</TabsTrigger>
+              <TabsTrigger value="artist">Artist</TabsTrigger>
+            </TabsList>
+            <TabsContent value="venue">
+              <CardHeader>
+                <CardTitle>Create a Venue Profile</CardTitle>
+                <CardDescription>
+                  Register your venue to easily manage bookings and connect with
+                  artists.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <VenueRegistrationForm />
+              </CardContent>
+            </TabsContent>
+            <TabsContent value="artist">
+              <CardHeader>
+                <CardTitle>Create an Artist Profile</CardTitle>
+                <CardDescription>
+                  Join our roster of talented artists to get booked for events.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ArtistRegistrationForm />
+              </CardContent>
+            </TabsContent>
+          </Tabs>
         </Card>
       </div>
     </div>
