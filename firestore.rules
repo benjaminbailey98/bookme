@@ -151,7 +151,7 @@ service cloud.firestore {
       match /booking_requests/{bookingRequestId} {
         allow get: if isSignedIn() && isBookingParticipant(resource);
         // This is a collection group query rule.
-        allow list: if isSignedIn() && request.query.get('artistProfileId') == request.auth.uid;
+        allow list: if isSignedIn() && request.query.where.get('artistProfileId', '==', request.auth.uid) != null;
         allow create: if isSignedIn() && request.resource.data.venueProfileId == venueProfileId;
         allow update: if isSignedIn() && isExistingDoc() && isBookingParticipant(resource);
         allow delete: if isSignedIn() && isExistingDoc() && isBookingParticipant(resource);
@@ -198,8 +198,8 @@ service cloud.firestore {
       allow get: if isSignedIn() && (isOwner(resource.data.referredUserId) || isOwner(resource.data.referrerUserId));
       allow list: if false;
       allow create: if isSignedIn() && (request.resource.data.referrerUserId == null || request.resource.data.referrerUserId == request.auth.uid);
-      allow update: if false;
-      allow delete: if false;
+      update: if false;
+      delete: if false;
     }
   }
 }
