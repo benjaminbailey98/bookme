@@ -142,7 +142,7 @@ service cloud.firestore {
         allow create: if isSignedIn() && request.resource.data.venueProfileId == venueProfileId;
         allow update: if isSignedIn() && isExistingDoc() && isBookingParticipant(resource);
         allow delete: if isSignedIn() && isExistingDoc() && isBookingParticipant(resource);
-        allow list: if isVenueOwner(venueProfileId);
+        allow list: if isOwner(venueProfileId);
       }
     }
     
