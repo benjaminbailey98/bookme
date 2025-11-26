@@ -16,7 +16,6 @@ const artists = [
       instagram: 'https://instagram.com',
       twitter: 'https://twitter.com',
     },
-    videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
     imageId: 'artist-1',
   },
   {
@@ -28,7 +27,6 @@ const artists = [
       instagram: 'https://instagram.com',
       twitter: 'https://twitter.com',
     },
-    videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
     imageId: 'artist-3',
   },
   {
@@ -40,7 +38,6 @@ const artists = [
       instagram: 'https://instagram.com',
       twitter: 'https://twitter.com',
     },
-    videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
     imageId: 'artist-2',
   },
   {
@@ -53,7 +50,6 @@ const artists = [
       instagram: 'https://instagram.com',
       twitter: 'https://twitter.com',
     },
-    videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
     imageId: 'artist-4',
   }
 ];
@@ -70,49 +66,44 @@ export default function ArtistsPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {artists.map((artist) => {
           const image = PlaceHolderImages.find((img) => img.id === artist.imageId);
           return (
             <Card key={artist.id} className="flex flex-col">
-              <CardHeader>
-                {image && (
-                  <div className="aspect-video relative mb-4">
-                    <Image
-                      src={image.imageUrl}
-                      alt={artist.stageName}
-                      fill
-                      className="rounded-md object-cover"
-                      data-ai-hint={image.imageHint}
-                    />
+              <CardContent className="p-6 flex-grow">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                  <div className="flex flex-col items-center sm:items-start text-center sm:text-left">
+                    {image && (
+                      <div className="w-32 h-32 relative mb-4">
+                        <Image
+                          src={image.imageUrl}
+                          alt={artist.stageName}
+                          fill
+                          className="rounded-full object-cover"
+                          data-ai-hint={image.imageHint}
+                        />
+                      </div>
+                    )}
+                    <div className="flex items-center gap-4">
+                      <Link href={artist.socials.youtube} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary">
+                        <Youtube className="h-6 w-6" />
+                      </Link>
+                       <Link href={artist.socials.instagram} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary">
+                        <Instagram className="h-6 w-6" />
+                      </Link>
+                       <Link href={artist.socials.twitter} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary">
+                        <Twitter className="h-6 w-6" />
+                      </Link>
+                    </div>
                   </div>
-                )}
-                <CardTitle>{artist.stageName}</CardTitle>
-              </CardHeader>
-              <CardContent className="flex-grow">
-                <CardDescription className="mb-4">{artist.bio}</CardDescription>
-                 <div className="aspect-w-16 aspect-h-9 mb-4">
-                  <iframe
-                    src={artist.videoUrl}
-                    title={`${artist.stageName} Promo Video`}
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                    className="w-full h-full rounded-md"
-                  ></iframe>
-                </div>
-                <div className="flex items-center gap-4">
-                  <Link href={artist.socials.youtube} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary">
-                    <Youtube className="h-6 w-6" />
-                  </Link>
-                   <Link href={artist.socials.instagram} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary">
-                    <Instagram className="h-6 w-6" />
-                  </Link>
-                   <Link href={artist.socials.twitter} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary">
-                    <Twitter className="h-6 w-6" />
-                  </Link>
+                  <div className="sm:col-span-2">
+                    <CardTitle className="mb-2">{artist.stageName}</CardTitle>
+                    <CardDescription>{artist.bio}</CardDescription>
+                  </div>
                 </div>
               </CardContent>
-              <CardFooter>
+              <CardFooter className="p-6 pt-0">
                  <Button asChild className="w-full">
                   <Link href={`/book?artist=${artist.id}`}>Book {artist.stageName}</Link>
                 </Button>
