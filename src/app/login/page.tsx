@@ -28,6 +28,7 @@ import { signInWithEmailAndPassword } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { initiateEmailSignIn } from '@/firebase/non-blocking-login';
 
 const loginFormSchema = z.object({
   email: z.string().email('Please enter a valid email.'),
@@ -50,27 +51,17 @@ export default function LoginPage() {
 
   const onSubmit = async (data: LoginFormValues) => {
     if (!auth) return;
-    try {
-      await signInWithEmailAndPassword(auth, data.email, data.password);
-      toast({
-        title: 'Login Successful',
-        description: "Welcome back! You're now logged in.",
-      });
-      router.push('/');
-    } catch (error: any) {
-      console.error('Login failed:', error);
-      let description = 'An unexpected error occurred. Please try again.';
-      if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
-        description = 'Invalid email or password. Please try again.';
-      } else if (error.message) {
-        description = error.message;
-      }
-      toast({
-        variant: 'destructive',
-        title: 'Login Failed',
-        description: description,
-      });
-    }
+
+    // Use the non-blocking sign-in function
+    initiateEmailSignIn(auth, data.email, data.password);
+    
+    toast({
+      title: 'Attempting Login...',
+      description: 'You will be redirected shortly.',
+    });
+    
+    // Redirect immediately. The useUser hook will handle auth state changes.
+    router.push('/');
   };
 
   return (
