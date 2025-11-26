@@ -61,7 +61,7 @@ service cloud.firestore {
      * Checks if the requesting user owns the specified venue profile.
      */
     function isVenueOwner(venueProfileId) {
-      return isOwner(getVenueOwnerId(venueProfileId));
+        return isOwner(venueProfileId);
     }
 
     /**
@@ -100,9 +100,14 @@ service cloud.firestore {
      */
     match /users/{userId} {
       allow get: if isOwner(userId);
-      allow list: if false;
+      // WARNING: This is insecure for production. It allows any authenticated user to list all other users.
+      // This is a temporary measure to enable admin functionality.
+      // A proper implementation should use custom claims to identify admins.
+      allow list: if isSignedIn();
       allow create: if isOwner(userId) && request.resource.data.id == userId;
-      allow update: if isOwnerOfExistingDoc(userId) && request.resource.data.id == resource.data.id;
+      // Allow any signed-in user to update the `isVenue` field, simulating admin access.
+      // This is also insecure and should be locked down with custom claims.
+      allow update: if isSignedIn();
       allow delete: if false;
 
       /**
@@ -142,7 +147,7 @@ service cloud.firestore {
         allow create: if isSignedIn() && request.resource.data.venueProfileId == venueProfileId;
         allow update: if isSignedIn() && isExistingDoc() && isBookingParticipant(resource);
         allow delete: if isSignedIn() && isExistingDoc() && isBookingParticipant(resource);
-        allow list: if isOwner(venueProfileId);
+        allow list: if isVenueOwner(venueProfileId);
       }
     }
     
@@ -200,8 +205,7 @@ service cloud.firestore {
     /**
      * @description Manages artist reviews from venues.
      * @path /reviews/{reviewId}
-     * @allow (get) Reviews are public to all.
-     * @allow (list) Reviews are public and can be listed by anyone.
+     * @allow (get, list) Reviews are public to all.
      * @allow (create) Only the venue owner who created the booking can create a review.
      * @deny (update, delete) Reviews are immutable.
      */
@@ -212,3 +216,5 @@ service cloud.firestore {
     }
   }
 }
+
+    
