@@ -119,8 +119,7 @@ service cloud.firestore {
        * @principle Enforces strict ownership for sensitive, nested user data.
        */
       match /subscriptions/{subscriptionId} {
-        allow get: if isOwner(userId);
-        allow list: if isOwner(userId);
+        allow get, list: if isOwner(userId);
         allow create: if isOwner(userId) && request.resource.data.userId == userId;
         allow update: if isOwnerOfExistingDoc(userId) && request.resource.data.userId == resource.data.userId;
         allow delete: if isOwnerOfExistingDoc(userId);
@@ -135,8 +134,7 @@ service cloud.firestore {
      * @principle Public Read with Owner-Only Writes.
      */
     match /venue_profiles/{venueProfileId} {
-      allow get: if true;
-      allow list: if true;
+      allow get, list: if true;
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
       allow update: if isOwnerOfExistingDoc(resource.data.userId) && request.resource.data.userId == resource.data.userId;
       allow delete: if isOwnerOfExistingDoc(resource.data.userId);
@@ -164,7 +162,7 @@ service cloud.firestore {
      * @principle This rule ensures that collection group queries for bookings are securely filtered.
      */
     match /{path=**}/booking_requests/{bookingRequestId} {
-      allow list: if isSignedIn() && request.query.where.artistProfileId == request.auth.uid;
+        allow list: if request.query.where.artistProfileId == request.auth.uid;
     }
 
     /**
@@ -174,8 +172,7 @@ service cloud.firestore {
      * @principle Public Read with Owner-Only Writes.
      */
     match /artist_profiles/{artistProfileId} {
-      allow get: if true;
-      allow list: if true;
+      allow get, list: if true;
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
       allow update: if isOwnerOfExistingDoc(resource.data.userId) && request.resource.data.userId == resource.data.userId;
       allow delete: if isOwnerOfExistingDoc(resource.data.userId);
@@ -188,8 +185,7 @@ service cloud.firestore {
        * @principle Ownership via parent document.
        */
       match /availability/{availabilityId} {
-        allow get: if true;
-        allow list: if true;
+        allow get, list: if true;
         allow create: if isArtistOwner(artistProfileId);
         allow update: if isExistingDoc() && isArtistOwner(artistProfileId);
         allow delete: if isExistingDoc() && isArtistOwner(artistProfileId);
