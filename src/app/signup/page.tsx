@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -24,12 +23,10 @@ import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { PasswordInput } from '@/components/ui/password-input';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth, useFirestore, errorEmitter, FirestorePermissionError } from '@/firebase';
+import { useAuth, useFirestore } from '@/firebase';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
-import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { initiateEmailSignUp } from '@/firebase/non-blocking-login';
 
 // Venue Schema
@@ -53,7 +50,6 @@ type ArtistFormValues = z.infer<typeof artistFormSchema>;
 function VenueRegistrationForm() {
   const { toast } = useToast();
   const auth = useAuth();
-  const firestore = useFirestore();
   const router = useRouter();
 
   const form = useForm<VenueFormValues>({
@@ -67,10 +63,27 @@ function VenueRegistrationForm() {
   });
 
   async function onSubmit(data: VenueFormValues) {
-    if (!auth || !firestore) return;
+    if (!auth) return;
     
-    // Non-blocking call
-    initiateEmailSignUp(auth, data.email, data.password);
+    // Non-blocking call, but we attach a .catch to handle errors.
+    initiateEmailSignUp(auth, data.email, data.password).catch((error) => {
+      console.error("Sign up error:", error);
+      if (error.code === 'auth/email-already-in-use') {
+        toast({
+          variant: 'destructive',
+          title: 'Sign Up Failed',
+          description: 'This email is already in use. Please log in or use a different email.',
+        });
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Sign Up Failed',
+          description: error.message || 'An unexpected error occurred.',
+        });
+      }
+      // Re-enable the form if submission fails
+      form.formState.isSubmitting && form.reset(form.getValues()); 
+    });
 
     toast({
       title: 'Creating Venue Profile...',
@@ -158,7 +171,6 @@ function VenueRegistrationForm() {
 function ArtistRegistrationForm() {
   const { toast } = useToast();
   const auth = useAuth();
-  const firestore = useFirestore();
   const router = useRouter();
   const form = useForm<ArtistFormValues>({
     resolver: zodResolver(artistFormSchema),
@@ -171,10 +183,27 @@ function ArtistRegistrationForm() {
   });
 
   async function onSubmit(data: ArtistFormValues) {
-    if (!auth || !firestore) return;
+    if (!auth) return;
     
-    // Non-blocking call
-    initiateEmailSignUp(auth, data.email, data.password);
+    // Non-blocking call, but we attach a .catch to handle errors.
+    initiateEmailSignUp(auth, data.email, data.password).catch((error) => {
+      console.error("Sign up error:", error);
+      if (error.code === 'auth/email-already-in-use') {
+        toast({
+          variant: 'destructive',
+          title: 'Sign Up Failed',
+          description: 'This email is already in use. Please log in or use a different email.',
+        });
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Sign Up Failed',
+          description: error.message || 'An unexpected error occurred.',
+        });
+      }
+      // Re-enable the form if submission fails
+      form.formState.isSubmitting && form.reset(form.getValues());
+    });
 
     toast({
       title: 'Creating Artist Profile...',
@@ -318,3 +347,5 @@ export default function SignupPage() {
     </div>
   );
 }
+
+    
