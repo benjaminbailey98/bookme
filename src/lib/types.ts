@@ -1,4 +1,5 @@
 
+
 import type { Timestamp } from 'firebase/firestore';
 
 export type ImagePlaceholder = {
@@ -13,6 +14,8 @@ export interface User {
     email: string;
     registrationDate: string;
     isVenue?: boolean;
+    displayName?: string;
+    phoneNumber?: string;
 }
 
 export interface VenueProfile {
@@ -43,6 +46,7 @@ export interface ArtistProfile {
     facebookUrl?: string;
     youtubeUrl?: string;
     spotifyUrl?: string;
+    additionalLinks?: { platform: string; url: string }[];
     managementCompanyName?: string;
     managementContactPerson?: string;
     managementEmail?: string;
@@ -64,7 +68,7 @@ export interface BookingRequest {
     id: string;
     venueProfileId: string;
     artistProfileId: string;
-    eventDate: Timestamp;
+    eventDate: Timestamp | Date; // Allow Date for form submission
     eventTime: string;
     lengthOfEvent: number;
     lengthOfPerformance: number;

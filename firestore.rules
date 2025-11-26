@@ -131,7 +131,7 @@ service cloud.firestore {
      */
     match /venue_profiles/{venueProfileId} {
       allow get, list: if true;
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid && request.resource.data.id == request.auth.uid;
       allow update: if isOwnerOfExistingDoc(resource.data.userId) && request.resource.data.userId == resource.data.userId;
       allow delete: if isOwnerOfExistingDoc(resource.data.userId);
 
@@ -144,7 +144,7 @@ service cloud.firestore {
        */
       match /booking_requests/{bookingRequestId} {
         allow get: if isSignedIn() && isBookingParticipant(resource);
-        allow create: if isSignedIn() && request.resource.data.venueProfileId == venueProfileId;
+        allow create: if isSignedIn(); // Allow any signed-in user to create a request (one-time booker or venue owner)
         allow update: if isSignedIn() && isExistingDoc() && isBookingParticipant(resource);
         allow delete: if isSignedIn() && isExistingDoc() && isBookingParticipant(resource);
         allow list: if isOwner(venueProfileId);
@@ -169,7 +169,7 @@ service cloud.firestore {
      */
     match /artist_profiles/{artistProfileId} {
       allow get, list: if true;
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid && request.resource.data.id == request.auth.uid;
       allow update: if isOwnerOfExistingDoc(resource.data.userId) && request.resource.data.userId == resource.data.userId;
       allow delete: if isOwnerOfExistingDoc(resource.data.userId);
 

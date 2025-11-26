@@ -26,7 +26,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { UploadCloud, PauseCircle, PlayCircle, XCircle, Loader2 } from 'lucide-react';
-import { useFirestore, useUser } from '@/firebase';
+import { useFirestore, useUser, useDoc, useMemoFirebase } from '@/firebase';
 import { doc, setDoc } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
 import {
@@ -42,6 +42,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import { VenueProfile } from '@/lib/types';
 
 
 const profileFormSchema = z.object({
@@ -61,8 +62,15 @@ type ProfileFormValues = z.infer<typeof profileFormSchema>;
 export default function VenueProfilePage() {
   const { toast } = useToast();
   const firestore = useFirestore();
-  const { user } = useUser();
+  const { user, isUserLoading } = useUser();
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const venueProfileRef = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return doc(firestore, 'venue_profiles', user.uid);
+  }, [firestore, user]);
+
+  const { data: profile, isLoading: isProfileLoading } = useDoc<VenueProfile>(venueProfileRef);
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
@@ -80,14 +88,12 @@ export default function VenueProfilePage() {
   });
 
   useEffect(() => {
-    if (user) {
-        // Ideally, you'd fetch existing venue data here.
-        // For now, we auto-populate from the user object.
-        form.setValue('companyName', user.displayName || '');
-        form.setValue('companyEmail', user.email || '');
-        form.setValue('companyPhone', user.phoneNumber || '');
+    if (profile) {
+      form.reset(profile);
+    } else if (user) {
+      form.setValue('companyEmail', user.email || '');
     }
-  }, [user, form]);
+  }, [profile, user, form]);
 
   async function onSubmit(data: ProfileFormValues) {
     if (!user || !firestore) {
@@ -132,6 +138,14 @@ export default function VenueProfilePage() {
           title: `Subscription ${action}`,
           description: `Logic to ${action} subscription is not implemented yet.`
       })
+  }
+
+  if (isUserLoading || isProfileLoading) {
+    return (
+        <div className="flex justify-center items-center h-screen">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+    );
   }
 
   return (
@@ -282,8 +296,8 @@ export default function VenueProfilePage() {
                     </CardHeader>
                     <CardContent className="flex flex-col items-center gap-4">
                         <Avatar className="w-40 h-40">
-                            <AvatarImage src="https://picsum.photos/seed/venue-logo/400/400" alt="Company Logo" />
-                            <AvatarFallback>LOGO</AvatarFallback>
+                            <AvatarImage src={profile?.companyLogoUrl || "https://picsum.photos/seed/venue-logo/400/400"} alt="Company Logo" />
+                            <AvatarFallback>{profile?.companyName?.charAt(0) || 'V'}</AvatarFallback>
                         </Avatar>
                         <Button type="button" variant="outline">
                             <UploadCloud className="mr-2 h-4 w-4" />

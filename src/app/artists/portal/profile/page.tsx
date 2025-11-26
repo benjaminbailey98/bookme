@@ -1,3 +1,4 @@
+
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -24,12 +25,14 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { UploadCloud, PlusCircle, Trash2 } from 'lucide-react';
+import { UploadCloud, PlusCircle, Trash2, Loader2 } from 'lucide-react';
 import { PasswordInput } from '@/components/ui/password-input';
-import { useFirestore, useUser } from '@/firebase';
+import { useFirestore, useUser, useDoc, useMemoFirebase } from '@/firebase';
 import { doc, setDoc } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import { ArtistProfile } from '@/lib/types';
+import { useEffect } from 'react';
 
 const socialLinkSchema = z.object({
   platform: z.string(),
@@ -65,8 +68,15 @@ type ProfileFormValues = z.infer<typeof profileFormSchema>;
 export default function ArtistProfilePage() {
   const { toast } = useToast();
   const firestore = useFirestore();
-  const { user } = useUser();
+  const { user, isUserLoading } = useUser();
   
+  const artistProfileRef = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return doc(firestore, 'artist_profiles', user.uid);
+  }, [firestore, user]);
+
+  const { data: profile, isLoading: isProfileLoading } = useDoc<ArtistProfile>(artistProfileRef);
+
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
     defaultValues: {
@@ -89,6 +99,15 @@ export default function ArtistProfilePage() {
       confirmPassword: '',
     },
   });
+
+  useEffect(() => {
+    if (profile) {
+      form.reset(profile);
+    }
+     if (user && !profile) {
+      form.setValue('personalEmail', user.email || '');
+    }
+  }, [profile, user, form]);
 
   const { fields, append, remove } =
     useFieldArray({
@@ -135,6 +154,14 @@ export default function ArtistProfilePage() {
     if (newPassword) {
       console.log('Password change requested. Implement this securely.');
     }
+  }
+
+  if (isUserLoading || isProfileLoading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
   }
 
   return (
@@ -186,8 +213,9 @@ export default function ArtistProfilePage() {
                       <FormItem>
                         <FormLabel>Personal Email</FormLabel>
                         <FormControl>
-                          <Input type="email" placeholder="you@example.com" {...field} />
+                          <Input type="email" placeholder="you@example.com" {...field} disabled/>
                         </FormControl>
+                         <FormDescription>Your login email cannot be changed.</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -369,8 +397,8 @@ export default function ArtistProfilePage() {
                 </CardHeader>
                 <CardContent className="flex flex-col items-center gap-4">
                   <Avatar className="w-40 h-40">
-                    <AvatarImage src="https://picsum.photos/seed/artist-pfp/400/400" alt="Artist Profile Picture"/>
-                    <AvatarFallback>PFP</AvatarFallback>
+                    <AvatarImage src={profile?.artistProfilePictureUrl || "https://picsum.photos/seed/artist-pfp/400/400"} alt="Artist Profile Picture"/>
+                    <AvatarFallback>{profile?.stageName?.charAt(0) || 'A'}</AvatarFallback>
                   </Avatar>
                   <Button type="button" variant="outline">
                     <UploadCloud className="mr-2 h-4 w-4" />
@@ -414,7 +442,8 @@ export default function ArtistProfilePage() {
           </div>
 
           <div className="flex justify-end">
-            <Button type="submit" size="lg">
+            <Button type="submit" size="lg" disabled={form.formState.isSubmitting}>
+              {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Save Changes
             </Button>
           </div>
