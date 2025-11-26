@@ -22,6 +22,7 @@ import {
   CalendarDays,
   ListMusic,
   LogOut,
+  CreditCard
 } from 'lucide-react';
 import { Icons } from '@/components/icons';
 import { useAuth } from '@/firebase';
@@ -34,6 +35,7 @@ const sidebarNavLinks = [
   { href: '/artists/portal/profile', label: 'Profile', icon: User },
   { href: '/artists/portal/availability', label: 'Availability', icon: CalendarDays },
   { href: '/artists/portal/bookings', label: 'Bookings', icon: ListMusic },
+  { href: '/artists/portal/subscription', label: 'Subscription', icon: CreditCard },
 ];
 
 export default function ArtistPortalLayout({
@@ -113,4 +115,3 @@ export default function ArtistPortalLayout({
     </SidebarProvider>
   );
 }
-
