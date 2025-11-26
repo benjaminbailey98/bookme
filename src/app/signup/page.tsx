@@ -56,6 +56,12 @@ function VenueRegistrationForm() {
 
   const form = useForm<VenueFormValues>({
     resolver: zodResolver(venueFormSchema),
+    defaultValues: {
+      companyName: '',
+      email: '',
+      phone: '',
+      password: '',
+    },
   });
 
   async function onSubmit(data: VenueFormValues) {
@@ -172,6 +178,12 @@ function ArtistRegistrationForm() {
   const router = useRouter();
   const form = useForm<ArtistFormValues>({
     resolver: zodResolver(artistFormSchema),
+    defaultValues: {
+      stageName: '',
+      email: '',
+      phone: '',
+      password: '',
+    },
   });
 
   async function onSubmit(data: ArtistFormValues) {
@@ -340,5 +352,3 @@ export default function SignupPage() {
     </div>
   );
 }
-
-    
