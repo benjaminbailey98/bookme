@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -204,6 +205,10 @@ export default function ArtistAvailabilityPage() {
             onDayClick={handleDateSelect}
             className="p-0"
             numberOfMonths={2}
+            classNames={{
+              month: 'space-y-4 border-r last:border-r-0 p-3',
+              months: 'flex flex-col sm:flex-row rounded-lg border',
+            }}
           />
         </Card>
 
@@ -315,5 +320,3 @@ declare module '@/lib/types' {
         isAllDay?: boolean;
     }
 }
-
-    
