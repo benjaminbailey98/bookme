@@ -18,6 +18,9 @@ import {
   LayoutDashboard,
   Building,
   LogOut,
+  ListMusic,
+  CreditCard,
+  Star,
 } from 'lucide-react';
 import { Icons } from '@/components/icons';
 import { useAuth } from '@/firebase';
@@ -28,6 +31,13 @@ import { usePathname } from 'next/navigation';
 const sidebarNavLinks = [
   { href: '/venues/portal', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/venues/portal/profile', label: 'Profile', icon: Building },
+  { href: '/venues/portal/bookings', label: 'Bookings', icon: ListMusic },
+  {
+    href: '/venues/portal/subscription',
+    label: 'Subscription',
+    icon: CreditCard,
+  },
+  { href: '/venues/portal/reviews', label: 'Reviews', icon: Star },
 ];
 
 export default function VenuePortalLayout({

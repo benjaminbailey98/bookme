@@ -10,13 +10,7 @@
  * - /venue_profiles/{venueProfileId}: Publicly readable profiles for venues, with write access restricted to the owning user.
  * - /artist_profiles/{artistProfileId}: Publicly readable profiles for artists, with write access restricted to the owning user.
  * - /referrals/{referralId}: A collection for tracking referrals, with limited read access for participants.
- *
- * Key Security Decisions:
- * - User Isolation: A user's private data (e.g., in `/users/{userId}`) is completely inaccessible to other users. Listing all users is disabled.
- * - Public Profiles: Artist and Venue profiles are designed to be publicly viewable to facilitate booking, but can only be edited by their designated owners.
- * - Subcollection Security: Access to subcollections (like booking requests or availability) is determined by the ownership of the parent document, requiring a `get()` call to check the parent's ownership data.
- * - Denormalization for Authorization: Rules rely on denormalized fields like `userId` on profile documents to make fast, simple, and non-billable authorization decisions for writes. This avoids complex and slow `get()` calls within write rules.
- * - Structural Segregation: Public data (profiles) is stored in top-level collections for efficient public listing, while private user data (subscriptions) is nested under the user's path to prevent accidental public exposure.
+ * - /reviews/{reviewId}: Reviews are publicly readable but can only be created by the authoring venue.
  */
 rules_version = '2';
 service cloud.firestore {
@@ -162,7 +156,7 @@ service cloud.firestore {
      * @principle This rule ensures that collection group queries for bookings are securely filtered.
      */
     match /{path=**}/booking_requests/{bookingRequestId} {
-        allow list: if request.query.where.artistProfileId == request.auth.uid;
+        allow list: if isSignedIn() && request.query.where.artistProfileId == request.auth.uid;
     }
 
     /**
@@ -204,6 +198,19 @@ service cloud.firestore {
       allow list: if false;
       allow create: if isSignedIn() && (request.resource.data.referrerUserId == null || request.resource.data.referrerUserId == request.auth.uid);
       update, delete: if false;
+    }
+
+    /**
+     * @description Manages artist reviews from venues.
+     * @path /reviews/{reviewId}
+     * @allow (read) Reviews are public to all.
+     * @allow (create) Only the venue owner can create a review for a booking they are part of.
+     * @deny (update, delete) Reviews are immutable.
+     */
+    match /reviews/{reviewId} {
+      allow get, list: if true;
+      allow create: if isSignedIn() && isOwner(request.resource.data.venueProfileId);
+      allow update, delete: if false;
     }
   }
 }

@@ -40,7 +40,7 @@ export interface BookingRequest {
     liveBandProvidedBy: 'venue' | 'artist';
     soundProvidedBy: 'venue' | 'artist';
     referralInfo?: string;
-    status?: 'pending' | 'confirmed' | 'declined';
+    status?: 'pending' | 'confirmed' | 'declined' | 'completed';
     venueOwnerId?: string;
 }
   
@@ -52,4 +52,14 @@ export interface Subscription {
     accountStatus: 'active' | 'inactive' | 'paused' | 'canceled';
     paymentHistory: string[];
     paymentStatus: 'paid' | 'delinquent';
+}
+
+export interface Review {
+    id: string;
+    bookingRequestId: string;
+    artistProfileId: string;
+    venueProfileId: string;
+    rating: number; // 1-5
+    reviewText: string;
+    createdAt: Timestamp;
 }
