@@ -25,7 +25,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { UploadCloud, PauseCircle, PlayCircle, XCircle, Loader2 } from 'lucide-react';
+import { PauseCircle, PlayCircle, XCircle, Loader2, Edit } from 'lucide-react';
 import { useFirestore, useUser, useDoc, useMemoFirebase } from '@/firebase';
 import { doc, setDoc } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
@@ -40,6 +40,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { ImageCropDialog } from '@/components/image-crop-dialog';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { VenueProfile } from '@/lib/types';
@@ -65,6 +71,7 @@ export default function VenueProfilePage() {
   const firestore = useFirestore();
   const { user, isUserLoading } = useUser();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCropDialogOpen, setIsCropDialogOpen] = useState(false);
 
   const venueProfileRef = useMemoFirebase(() => {
     if (!firestore || !user) return null;
@@ -139,6 +146,13 @@ export default function VenueProfilePage() {
           title: `Subscription ${action}`,
           description: `Logic to ${action} subscription is not implemented yet.`
       })
+  }
+
+  const handleCroppedImage = (image: string | null) => {
+    if (image) {
+      form.setValue('companyLogoUrl', image, { shouldDirty: true, shouldValidate: true });
+    }
+    setIsCropDialogOpen(false);
   }
 
   if (isUserLoading || isProfileLoading) {
@@ -296,24 +310,23 @@ export default function VenueProfilePage() {
                         <CardTitle>Company Logo</CardTitle>
                     </CardHeader>
                     <CardContent className="flex flex-col items-center gap-4">
-                        <Avatar className="w-40 h-40">
-                            <AvatarImage src={form.watch('companyLogoUrl') || "https://picsum.photos/seed/venue-logo/400/400"} alt="Company Logo" />
-                            <AvatarFallback>{profile?.companyName?.charAt(0) || 'V'}</AvatarFallback>
-                        </Avatar>
-                         <FormField
-                            control={form.control}
-                            name="companyLogoUrl"
-                            render={({ field }) => (
-                            <FormItem className="w-full">
-                                <FormLabel className="sr-only">Company Logo URL</FormLabel>
-                                <FormControl>
-                                <Input placeholder="https://example.com/logo.png" {...field} />
-                                </FormControl>
-                                <FormDescription className="text-xs text-center">Paste an image URL to update.</FormDescription>
-                                <FormMessage />
-                            </FormItem>
-                            )}
-                        />
+                      <Dialog open={isCropDialogOpen} onOpenChange={setIsCropDialogOpen}>
+                        <div className="relative group w-40 h-40">
+                          <Avatar className="w-40 h-40">
+                              <AvatarImage src={form.watch('companyLogoUrl') || "https://picsum.photos/seed/venue-logo/400/400"} alt="Company Logo" />
+                              <AvatarFallback>{profile?.companyName?.charAt(0) || 'V'}</AvatarFallback>
+                          </Avatar>
+                          <DialogTrigger asChild>
+                            <Button variant="outline" size="icon" className="absolute bottom-2 right-2 rounded-full group-hover:bg-primary group-hover:text-primary-foreground">
+                                <Edit className="w-4 h-4"/>
+                            </Button>
+                          </DialogTrigger>
+                        </div>
+                        <DialogContent className="min-w-[50vw]">
+                            <ImageCropDialog onImageCropped={handleCroppedImage} onOpenChange={setIsCropDialogOpen}/>
+                        </DialogContent>
+                      </Dialog>
+                      <FormMessage>{form.formState.errors.companyLogoUrl?.message}</FormMessage>
                     </CardContent>
                 </Card>
 
