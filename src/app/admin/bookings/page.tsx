@@ -1,7 +1,7 @@
 
 'use client';
 
-import { collectionGroup, query } from 'firebase/firestore';
+import { collectionGroup, query, doc, updateDoc } from 'firebase/firestore';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import type { BookingRequest, ArtistProfile } from '@/lib/types';
 import { Button } from '@/components/ui/button';
@@ -20,17 +20,30 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, PlusCircle } from 'lucide-react';
+import { Loader2, MoreHorizontal, PlusCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { useMemo } from 'react';
 import { collection } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 export default function AdminBookingsPage() {
   const firestore = useFirestore();
+  const { toast } = useToast();
 
   const bookingsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
+    // This collection group query requires a specific security rule to allow admins to list all bookings.
     return query(collectionGroup(firestore, 'booking_requests'));
   }, [firestore]);
 
@@ -64,6 +77,38 @@ export default function AdminBookingsPage() {
         return 'outline';
       default:
         return 'outline';
+    }
+  };
+
+  const handleStatusChange = async (
+    booking: BookingRequest,
+    newStatus: 'pending' | 'confirmed' | 'declined' | 'completed'
+  ) => {
+    if (!firestore) return;
+
+    const bookingDocRef = doc(
+      firestore,
+      'venue_profiles',
+      booking.venueProfileId,
+      'booking_requests',
+      booking.id
+    );
+
+    try {
+      await updateDoc(bookingDocRef, { status: newStatus });
+      toast({
+        title: 'Booking Status Updated',
+        description: `Booking for ${
+          artistMap.get(booking.artistProfileId) || 'artist'
+        } at ${booking.venueName} is now ${newStatus}.`,
+      });
+    } catch (serverError: any) {
+      const permissionError = new FirestorePermissionError({
+        path: bookingDocRef.path,
+        operation: 'update',
+        requestResourceData: { status: newStatus },
+      });
+      errorEmitter.emit('permission-error', permissionError);
     }
   };
 
@@ -105,14 +150,13 @@ export default function AdminBookingsPage() {
                 bookings.map((booking) => (
                   <TableRow key={booking.id}>
                     <TableCell className="font-medium">
-                      {booking.eventDate.toDate
+                      {booking.eventDate?.toDate
                         ? format(booking.eventDate.toDate(), 'PPP')
                         : 'Invalid Date'}
                     </TableCell>
                     <TableCell>{booking.venueName}</TableCell>
                     <TableCell>
-                      {artistMap.get(booking.artistProfileId) ||
-                        booking.artistProfileId}
+                      {artistMap.get(booking.artistProfileId) || 'Unknown Artist'}
                     </TableCell>
                     <TableCell>
                       <Badge variant={getStatusVariant(booking.status)}>
@@ -120,9 +164,44 @@ export default function AdminBookingsPage() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button variant="outline" size="sm">
-                        View Details
-                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" className="h-8 w-8 p-0">
+                            <span className="sr-only">Open menu</span>
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                          <DropdownMenuItem>View Details</DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuLabel>Change Status</DropdownMenuLabel>
+                          <DropdownMenuItem
+                            onClick={() => handleStatusChange(booking, 'pending')}
+                            disabled={booking.status === 'pending'}
+                          >
+                            Set to Pending
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleStatusChange(booking, 'confirmed')}
+                             disabled={booking.status === 'confirmed'}
+                          >
+                            Set to Confirmed
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleStatusChange(booking, 'declined')}
+                             disabled={booking.status === 'declined'}
+                          >
+                            Set to Declined
+                          </DropdownMenuItem>
+                           <DropdownMenuItem
+                            onClick={() => handleStatusChange(booking, 'completed')}
+                             disabled={booking.status === 'completed'}
+                          >
+                            Set to Completed
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 ))
