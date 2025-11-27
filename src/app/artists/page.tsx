@@ -29,6 +29,9 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
+
+const artistImages = PlaceHolderImages.filter(img => img.id.startsWith('artist-'));
 
 export default function ArtistsPage() {
   const firestore = useFirestore();
@@ -61,20 +64,24 @@ export default function ArtistsPage() {
 
       {!isLoading && artists && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {artists.map((artist) => (
+          {artists.map((artist, index) => {
+             const image =
+             artist.artistProfilePictureUrl ||
+             artistImages[index % artistImages.length].imageUrl;
+            const imageHint = artistImages[index % artistImages.length].imageHint;
+
+            return(
             <Card key={artist.id} className="flex flex-col">
               <CardContent className="p-6 flex-grow">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                   <div className="flex flex-col items-center sm:items-start text-center sm:text-left">
                     <div className="w-32 h-32 relative mb-4">
                       <Image
-                        src={
-                          artist.artistProfilePictureUrl ||
-                          `https://picsum.photos/seed/${artist.id}/300/300`
-                        }
+                        src={image}
                         alt={artist.stageName}
                         fill
                         className="rounded-full object-cover"
+                        data-ai-hint={imageHint}
                       />
                     </div>
                     <div className="flex items-center gap-4">
@@ -152,7 +159,7 @@ export default function ArtistsPage() {
                 </Button>
               </CardFooter>
             </Card>
-          ))}
+          )})}
         </div>
       )}
 

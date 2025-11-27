@@ -3,32 +3,44 @@
     {
       "id": "hero-concert",
       "description": "A vibrant concert with a singer on stage and an excited crowd.",
-      "imageUrl": "https://images.unsplash.com/photo-1689783101582-98feb9393a57?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxjb25jZXJ0JTIwY3Jvd2R8ZW58MHx8fHwxNzY0MTQxMDI3fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageUrl": "https://images.unsplash.com/photo-1540039233332-cb642d6a5c20?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
       "imageHint": "concert crowd"
     },
     {
       "id": "artist-1",
       "description": "A portrait of a male singer.",
-      "imageUrl": "https://images.unsplash.com/photo-1602025747027-bce6e5dc32b9?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxtYWxlJTIwc2luZ2VyfGVufDB8fHx8MTc2NDE1MDcwM3ww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageUrl": "https://images.unsplash.com/photo-1602025747027-bce6e5dc32b9?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxtYWxlJTIwc2luZ2VyfGVufDB8fHx8MTc2NDE1MDcwM3ww&ixlib=rb-4.0.3&q=80&w=1080",
       "imageHint": "male singer"
     },
     {
       "id": "artist-2",
       "description": "A portrait of a female DJ.",
-      "imageUrl": "https://images.unsplash.com/photo-1618578519257-7c9265145d92?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxmZW1hbGUlMjBkanxlbnwwfHx8fDE3NjQxNTA3MDR8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageUrl": "https://images.unsplash.com/photo-1618578519257-7c9265145d92?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxmZW1hbGUlMjBkanxlbnwwfHx8fDE3NjQxNTA3MDR8MA&ixlib=rb-4.0.3&q=80&w=1080",
       "imageHint": "female dj"
     },
     {
       "id": "artist-3",
       "description": "A band performing on stage.",
-      "imageUrl": "https://images.unsplash.com/photo-1571768156614-be17eb6f63d7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxiYW5kJTIwc3RhZ2V8ZW58MHx8fHwxNzY0MDcyMTEzfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageUrl": "https://images.unsplash.com/photo-1571768156614-be17eb6f63d7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxiYW5kJTIwc3RhZ2V8ZW58MHx8fHwxNzY0MDcyMTEzfDA&ixlib=rb-4.0.3&q=80&w=1080",
       "imageHint": "band stage"
     },
     {
       "id": "artist-4",
       "description": "A female acoustic guitarist and singer.",
-      "imageUrl": "https://images.unsplash.com/photo-1552831341-353985392688?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxNXx8ZmVtYWxlJTIwYWNvdXN0aWMlMjBndWl0YXJpc3R8ZW58MHx8fHwxNzE3MDM2MTc2fDA",
+      "imageUrl": "https://images.unsplash.com/photo-1552831341-353985392688?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxNXx8ZmVtYWxlJTIwYWNvdXN0aWMlMjBndWl0YXJpc3R8ZW58MHx8fHwxNzE3MDM2MTc2fDA",
       "imageHint": "female guitarist"
+    },
+    {
+      "id": "artist-5",
+      "description": "A male DJ looking at the camera.",
+      "imageUrl": "https://images.unsplash.com/photo-1598488035139-BFFb828ce3F3?q=80&w=1925&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      "imageHint": "male dj"
+    },
+    {
+      "id": "artist-6",
+      "description": "A female singer on stage with a microphone.",
+      "imageUrl": "https://images.unsplash.com/photo-1594125339267-3031dabc4de9?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      "imageHint": "female singer"
     }
   ]
 }
