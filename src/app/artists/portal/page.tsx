@@ -3,12 +3,16 @@
 
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Building, Calendar, DollarSign, Music, Loader2 } from 'lucide-react';
+import { Building, Calendar, DollarSign, ListMusic, Loader2, Music } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo } from 'react';
 import type { BookingRequest } from '@/lib/types';
-import { collectionGroup, query, where, Timestamp } from 'firebase/firestore';
-import { differenceInDays } from 'date-fns';
+import { collectionGroup, query, where, Timestamp, orderBy, limit } from 'firebase/firestore';
+import { differenceInDays, format } from 'date-fns';
+import { Table, TableBody, TableCell, TableRow, TableHeader, TableHead } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 
 export default function ArtistPortalPage() {
   const { user, isUserLoading } = useUser();
@@ -23,7 +27,18 @@ export default function ArtistPortalPage() {
     );
   }, [firestore, user]);
 
+  const recentBookingsQuery = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return query(
+        collectionGroup(firestore, 'booking_requests'),
+        where('artistProfileId', '==', user.uid),
+        orderBy('eventDate', 'desc'),
+        limit(5)
+    );
+  }, [firestore, user]);
+
   const { data: bookings, isLoading: areBookingsLoading } = useCollection<BookingRequest>(bookingsQuery);
+  const { data: recentBookings, isLoading: areRecentBookingsLoading } = useCollection<BookingRequest>(recentBookingsQuery);
   
   const stats = useMemo(() => {
     if (!bookings) return { total: 0, upcoming: 0, newRequests: 0 };
@@ -36,6 +51,15 @@ export default function ArtistPortalPage() {
     }
   }, [bookings]);
 
+  const getStatusVariant = (status?: string) => {
+    switch (status) {
+        case 'confirmed': return 'default';
+        case 'pending': return 'secondary';
+        case 'declined': return 'destructive';
+        case 'completed': return 'outline';
+        default: return 'outline';
+    }
+  }
 
   useEffect(() => {
     if (!isUserLoading && !user) {
@@ -112,11 +136,47 @@ export default function ArtistPortalPage() {
       </div>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
         <Card className="col-span-4">
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Recent Booking Requests</CardTitle>
+            <Button asChild variant="outline" size="sm">
+                <Link href="/artists/portal/bookings">View All</Link>
+            </Button>
           </CardHeader>
           <CardContent>
-            <p>Booking request list coming soon.</p>
+            <Table>
+                <TableHeader>
+                    <TableRow>
+                        <TableHead>Event Date</TableHead>
+                        <TableHead>Venue</TableHead>
+                        <TableHead>Status</TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                     {areRecentBookingsLoading ? (
+                        <TableRow>
+                            <TableCell colSpan={3} className="text-center h-24">
+                                <Loader2 className="mx-auto h-6 w-6 animate-spin text-muted-foreground" />
+                            </TableCell>
+                        </TableRow>
+                    ) : recentBookings && recentBookings.length > 0 ? (
+                        recentBookings.map(booking => (
+                            <TableRow key={booking.id}>
+                                <TableCell>{booking.eventDate?.toDate ? format(booking.eventDate.toDate(), 'PPP') : 'N/A'}</TableCell>
+                                <TableCell>{booking.venueName}</TableCell>
+                                <TableCell>
+                                    <Badge variant={getStatusVariant(booking.status)}>{booking.status || 'Pending'}</Badge>
+                                </TableCell>
+                            </TableRow>
+                        ))
+                    ) : (
+                         <TableRow>
+                            <TableCell colSpan={3} className="h-24 text-center text-muted-foreground">
+                                No recent booking requests.
+                            </TableCell>
+                        </TableRow>
+                    )}
+                </TableBody>
+            </Table>
           </CardContent>
         </Card>
         <Card className="col-span-3">

@@ -6,9 +6,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar, DollarSign, ListMusic, Users, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo } from 'react';
-import { collection, query, Timestamp } from 'firebase/firestore';
-import type { BookingRequest } from '@/lib/types';
-import { differenceInDays } from 'date-fns';
+import { collection, query, Timestamp, orderBy, limit } from 'firebase/firestore';
+import type { BookingRequest, ArtistProfile } from '@/lib/types';
+import { differenceInDays, format } from 'date-fns';
+import { Table, TableBody, TableCell, TableRow, TableHeader, TableHead } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 
 export default function VenuePortalPage() {
   const { user, isUserLoading } = useUser();
@@ -20,7 +24,26 @@ export default function VenuePortalPage() {
     return query(collection(firestore, 'venue_profiles', user.uid, 'booking_requests'));
   }, [firestore, user]);
 
+  const recentBookingsQuery = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return query(collection(firestore, 'venue_profiles', user.uid, 'booking_requests'), orderBy('eventDate', 'desc'), limit(5));
+  }, [firestore, user]);
+
+  const artistsQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'artist_profiles'));
+  }, [firestore]);
+
+
   const { data: bookings, isLoading: areBookingsLoading } = useCollection<BookingRequest>(bookingsQuery);
+  const { data: recentBookings, isLoading: areRecentBookingsLoading } = useCollection<BookingRequest>(recentBookingsQuery);
+  const { data: artists, isLoading: areArtistsLoading } = useCollection<ArtistProfile>(artistsQuery);
+
+
+  const artistMap = useMemo(() => {
+    if (!artists) return new Map();
+    return new Map(artists.map((artist) => [artist.id, artist.stageName]));
+  }, [artists]);
 
   const stats = useMemo(() => {
     if (!bookings) return { total: 0, upcoming: 0 };
@@ -32,13 +55,23 @@ export default function VenuePortalPage() {
     }
   }, [bookings]);
 
+  const getStatusVariant = (status?: string) => {
+    switch (status) {
+        case 'confirmed': return 'default';
+        case 'pending': return 'secondary';
+        case 'declined': return 'destructive';
+        case 'completed': return 'outline';
+        default: return 'outline';
+    }
+  }
+
   useEffect(() => {
     if (!isUserLoading && !user) {
       router.push('/login');
     }
   }, [user, isUserLoading, router]);
 
-  if (isUserLoading || areBookingsLoading || !user) {
+  if (isUserLoading || areBookingsLoading || !user || areArtistsLoading) {
     return (
       <div className="flex justify-center items-center h-screen">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -107,11 +140,47 @@ export default function VenuePortalPage() {
       </div>
        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
         <Card className="col-span-4">
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Recent Booking Activity</CardTitle>
+             <Button asChild variant="outline" size="sm">
+                <Link href="/venues/portal/bookings">View All</Link>
+            </Button>
           </CardHeader>
           <CardContent>
-            <p>Booking activity list coming soon.</p>
+             <Table>
+                <TableHeader>
+                    <TableRow>
+                        <TableHead>Event Date</TableHead>
+                        <TableHead>Artist</TableHead>
+                        <TableHead>Status</TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                     {areRecentBookingsLoading ? (
+                        <TableRow>
+                            <TableCell colSpan={3} className="text-center h-24">
+                                <Loader2 className="mx-auto h-6 w-6 animate-spin text-muted-foreground" />
+                            </TableCell>
+                        </TableRow>
+                    ) : recentBookings && recentBookings.length > 0 ? (
+                        recentBookings.map(booking => (
+                            <TableRow key={booking.id}>
+                                <TableCell>{booking.eventDate?.toDate ? format(booking.eventDate.toDate(), 'PPP') : 'N/A'}</TableCell>
+                                <TableCell>{artistMap.get(booking.artistProfileId) || 'Unknown Artist'}</TableCell>
+                                <TableCell>
+                                    <Badge variant={getStatusVariant(booking.status)}>{booking.status || 'Pending'}</Badge>
+                                </TableCell>
+                            </TableRow>
+                        ))
+                    ) : (
+                         <TableRow>
+                            <TableCell colSpan={3} className="h-24 text-center text-muted-foreground">
+                                No recent booking activity.
+                            </TableCell>
+                        </TableRow>
+                    )}
+                </TableBody>
+            </Table>
           </CardContent>
         </Card>
         <Card className="col-span-3">

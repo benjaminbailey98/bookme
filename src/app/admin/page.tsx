@@ -1,25 +1,71 @@
 
 'use client';
 
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, Building, ListMusic, Calendar, DollarSign, UserCheck, Star } from 'lucide-react';
+import { Users, Building, ListMusic, UserCheck, Star } from 'lucide-react';
+import { collection, query, where } from 'firebase/firestore';
+import type { User, ArtistProfile, VenueProfile, BookingRequest } from '@/lib/types';
+import { useMemo } from 'react';
+import { Loader2 } from 'lucide-react';
 
 export default function AdminDashboardPage() {
-  const stats = [
-    { title: 'Total Users', value: '1,250', icon: Users, change: '+12.5%' },
-    { title: 'Registered Artists', value: '150', icon: Star, change: '+5.2%' },
-    { title: 'Registered Venues', value: '75', icon: Building, change: '+8.1%' },
-    { title: 'Total Bookings', value: '540', icon: ListMusic, change: '+20.1% since last month' },
-    { title: 'Total Subscriptions', value: '225', icon: DollarSign, change: '70% active' },
-    { title: 'Pending Approvals', value: '12', icon: UserCheck, change: '5 artists, 7 venues' },
-  ];
+
+  const firestore = useFirestore();
+
+  const usersQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'users'));
+  }, [firestore]);
+
+  const artistsQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'artist_profiles'));
+  }, [firestore]);
+
+  const venuesQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'venue_profiles'));
+  }, [firestore]);
+  
+  const bookingsQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collectionGroup(firestore, 'booking_requests'));
+  }, [firestore]);
+
+  const { data: users, isLoading: usersLoading } = useCollection<User>(usersQuery);
+  const { data: artists, isLoading: artistsLoading } = useCollection<ArtistProfile>(artistsQuery);
+  const { data: venues, isLoading: venuesLoading } = useCollection<VenueProfile>(venuesQuery);
+  const { data: bookings, isLoading: bookingsLoading } = useCollection<BookingRequest>(bookingsQuery);
+
+  const isLoading = usersLoading || artistsLoading || venuesLoading || bookingsLoading;
+
+  const stats = useMemo(() => {
+    if (!users || !artists || !venues || !bookings) return [];
+
+    return [
+      { title: 'Total Users', value: users.length.toString(), icon: Users, change: '' },
+      { title: 'Registered Artists', value: artists.length.toString(), icon: Star, change: '' },
+      { title: 'Registered Venues', value: venues.length.toString(), icon: Building, change: '' },
+      { title: 'Total Bookings', value: bookings.length.toString(), icon: ListMusic, change: `${bookings.filter(b => b.status === 'confirmed').length} confirmed` },
+      { title: 'Pending Bookings', value: bookings.filter(b => b.status === 'pending' || !b.status).length.toString(), icon: UserCheck, change: 'Awaiting action' },
+    ];
+  }, [users, artists, venues, bookings]);
+
+  if (isLoading) {
+      return (
+          <div className="flex h-screen items-center justify-center">
+              <Loader2 className="h-16 w-16 animate-spin text-muted-foreground" />
+          </div>
+      )
+  }
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
       <div className="flex items-center justify-between space-y-2">
         <h2 className="text-3xl font-bold tracking-tight">Admin Dashboard</h2>
       </div>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         {stats.map((stat) => (
           <Card key={stat.title}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

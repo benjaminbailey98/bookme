@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -8,6 +9,7 @@ import {
   FirestoreError,
   QuerySnapshot,
   CollectionReference,
+  collectionGroup,
 } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -89,7 +91,10 @@ export function useCollection<T = any>(
         const path: string =
           memoizedTargetRefOrQuery.type === 'collection'
             ? (memoizedTargetRefOrQuery as CollectionReference).path
-            : (memoizedTargetRefOrQuery as unknown as InternalQuery)._query.path.canonicalString()
+            : memoizedTargetRefOrQuery.type === 'query' && (memoizedTargetRefOrQuery as unknown as InternalQuery)._query.path
+            ? (memoizedTargetRefOrQuery as unknown as InternalQuery)._query.path.canonicalString()
+            : 'unknown_path'; // Fallback for collection group or other query types
+
 
         const contextualError = new FirestorePermissionError({
           operation: 'list',
