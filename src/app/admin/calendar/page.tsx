@@ -18,6 +18,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { format, isSameDay, parseISO } from 'date-fns';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Badge } from '@/components/ui/badge';
 
 export default function AdminCalendarPage() {
   const firestore = useFirestore();
@@ -83,7 +84,7 @@ export default function AdminCalendarPage() {
       }
     });
 
-    return { available: availableArtists, unavailable: unavailableArtistsWithDetails };
+    return { available: availableArtists, unavailable: unavailableArtistsWithDetails as (ArtistProfile & {unavailabilityReason: string})[] };
 
   }, [artists, allAvailability, selectedDate]);
 
@@ -181,3 +182,5 @@ export default function AdminCalendarPage() {
     </div>
   );
 }
+
+    
