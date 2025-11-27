@@ -1,18 +1,44 @@
-
 'use client';
 
-import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import {
+  useUser,
+  useFirestore,
+  useCollection,
+  useMemoFirebase,
+} from '@/firebase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Building, Calendar, DollarSign, ListMusic, Loader2, Music } from 'lucide-react';
+import {
+  Building,
+  Calendar,
+  DollarSign,
+  ListMusic,
+  Loader2,
+  Music,
+} from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo } from 'react';
 import type { BookingRequest } from '@/lib/types';
-import { collectionGroup, query, where, Timestamp, orderBy, limit } from 'firebase/firestore';
+import {
+  collectionGroup,
+  query,
+  where,
+  Timestamp,
+  orderBy,
+  limit,
+} from 'firebase/firestore';
 import { differenceInDays, format } from 'date-fns';
-import { Table, TableBody, TableCell, TableRow, TableHeader, TableHead } from '@/components/ui/table';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableRow,
+  TableHeader,
+  TableHead,
+} from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { EventCalendar } from '@/components/event-calendar';
 
 export default function ArtistPortalPage() {
   const { user, isUserLoading } = useUser();
@@ -30,36 +56,60 @@ export default function ArtistPortalPage() {
   const recentBookingsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
     return query(
-        collectionGroup(firestore, 'booking_requests'),
-        where('artistProfileId', '==', user.uid),
-        orderBy('eventDate', 'desc'),
-        limit(5)
+      collectionGroup(firestore, 'booking_requests'),
+      where('artistProfileId', '==', user.uid),
+      orderBy('eventDate', 'desc'),
+      limit(5)
     );
   }, [firestore, user]);
 
-  const { data: bookings, isLoading: areBookingsLoading } = useCollection<BookingRequest>(bookingsQuery);
-  const { data: recentBookings, isLoading: areRecentBookingsLoading } = useCollection<BookingRequest>(recentBookingsQuery);
-  
+  const { data: bookings, isLoading: areBookingsLoading } =
+    useCollection<BookingRequest>(bookingsQuery);
+  const { data: recentBookings, isLoading: areRecentBookingsLoading } =
+    useCollection<BookingRequest>(recentBookingsQuery);
+
   const stats = useMemo(() => {
     if (!bookings) return { total: 0, upcoming: 0, newRequests: 0 };
-    
+
     const now = new Date();
     return {
-        total: bookings.length,
-        upcoming: bookings.filter(b => b.eventDate.toDate() > now && differenceInDays(b.eventDate.toDate(), now) <= 30 && b.status === 'confirmed').length,
-        newRequests: bookings.filter(b => b.status === 'pending' || !b.status).length
-    }
+      total: bookings.length,
+      upcoming: bookings.filter(
+        (b) =>
+          b.eventDate.toDate() > now &&
+          differenceInDays(b.eventDate.toDate(), now) <= 30 &&
+          b.status === 'confirmed'
+      ).length,
+      newRequests: bookings.filter((b) => b.status === 'pending' || !b.status)
+        .length,
+    };
+  }, [bookings]);
+
+  const calendarEvents = useMemo(() => {
+    if (!bookings) return [];
+    return bookings
+      .filter((b) => b.status === 'confirmed')
+      .map((booking) => ({
+        title: booking.venueName,
+        date: booking.eventDate.toDate(),
+        description: `Event: ${booking.eventType}`,
+      }));
   }, [bookings]);
 
   const getStatusVariant = (status?: string) => {
     switch (status) {
-        case 'confirmed': return 'default';
-        case 'pending': return 'secondary';
-        case 'declined': return 'destructive';
-        case 'completed': return 'outline';
-        default: return 'outline';
+      case 'confirmed':
+        return 'default';
+      case 'pending':
+        return 'secondary';
+      case 'declined':
+        return 'destructive';
+      case 'completed':
+        return 'outline';
+      default:
+        return 'outline';
     }
-  }
+  };
 
   useEffect(() => {
     if (!isUserLoading && !user) {
@@ -85,9 +135,7 @@ export default function ArtistPortalPage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Total Bookings
-            </CardTitle>
+            <CardTitle className="text-sm font-medium">Total Bookings</CardTitle>
             <Music className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -139,43 +187,52 @@ export default function ArtistPortalPage() {
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Recent Booking Requests</CardTitle>
             <Button asChild variant="outline" size="sm">
-                <Link href="/artists/portal/bookings">View All</Link>
+              <Link href="/artists/portal/bookings">View All</Link>
             </Button>
           </CardHeader>
           <CardContent>
             <Table>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead>Event Date</TableHead>
-                        <TableHead>Venue</TableHead>
-                        <TableHead>Status</TableHead>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Event Date</TableHead>
+                  <TableHead>Venue</TableHead>
+                  <TableHead>Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {areRecentBookingsLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={3} className="text-center h-24">
+                      <Loader2 className="mx-auto h-6 w-6 animate-spin text-muted-foreground" />
+                    </TableCell>
+                  </TableRow>
+                ) : recentBookings && recentBookings.length > 0 ? (
+                  recentBookings.map((booking) => (
+                    <TableRow key={booking.id}>
+                      <TableCell>
+                        {booking.eventDate?.toDate
+                          ? format(booking.eventDate.toDate(), 'PPP')
+                          : 'N/A'}
+                      </TableCell>
+                      <TableCell>{booking.venueName}</TableCell>
+                      <TableCell>
+                        <Badge variant={getStatusVariant(booking.status)}>
+                          {booking.status || 'Pending'}
+                        </Badge>
+                      </TableCell>
                     </TableRow>
-                </TableHeader>
-                <TableBody>
-                     {areRecentBookingsLoading ? (
-                        <TableRow>
-                            <TableCell colSpan={3} className="text-center h-24">
-                                <Loader2 className="mx-auto h-6 w-6 animate-spin text-muted-foreground" />
-                            </TableCell>
-                        </TableRow>
-                    ) : recentBookings && recentBookings.length > 0 ? (
-                        recentBookings.map(booking => (
-                            <TableRow key={booking.id}>
-                                <TableCell>{booking.eventDate?.toDate ? format(booking.eventDate.toDate(), 'PPP') : 'N/A'}</TableCell>
-                                <TableCell>{booking.venueName}</TableCell>
-                                <TableCell>
-                                    <Badge variant={getStatusVariant(booking.status)}>{booking.status || 'Pending'}</Badge>
-                                </TableCell>
-                            </TableRow>
-                        ))
-                    ) : (
-                         <TableRow>
-                            <TableCell colSpan={3} className="h-24 text-center text-muted-foreground">
-                                No recent booking requests.
-                            </TableCell>
-                        </TableRow>
-                    )}
-                </TableBody>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell
+                      colSpan={3}
+                      className="h-24 text-center text-muted-foreground"
+                    >
+                      No recent booking requests.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
             </Table>
           </CardContent>
         </Card>
@@ -184,7 +241,7 @@ export default function ArtistPortalPage() {
             <CardTitle>Your Availability</CardTitle>
           </CardHeader>
           <CardContent>
-            <p>Availability calendar coming soon.</p>
+            <EventCalendar events={calendarEvents} />
           </CardContent>
         </Card>
       </div>

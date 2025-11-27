@@ -1,7 +1,13 @@
-
 'use client';
 
-import { collectionGroup, query, doc, updateDoc } from 'firebase/firestore';
+import {
+  collectionGroup,
+  query,
+  doc,
+  updateDoc,
+  getDocs,
+  where,
+} from 'firebase/firestore';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import type { BookingRequest, ArtistProfile } from '@/lib/types';
 import { Button } from '@/components/ui/button';
@@ -36,6 +42,7 @@ import { collection } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import Link from 'next/link';
 
 export default function AdminBookingsPage() {
   const firestore = useFirestore();
@@ -94,30 +101,33 @@ export default function AdminBookingsPage() {
       booking.id
     );
 
-    try {
-      await updateDoc(bookingDocRef, { status: newStatus });
-      toast({
-        title: 'Booking Status Updated',
-        description: `Booking for ${
-          artistMap.get(booking.artistProfileId) || 'artist'
-        } at ${booking.venueName} is now ${newStatus}.`,
+    updateDoc(bookingDocRef, { status: newStatus })
+      .then(() => {
+        toast({
+          title: 'Booking Status Updated',
+          description: `Booking for ${
+            artistMap.get(booking.artistProfileId) || 'artist'
+          } at ${booking.venueName} is now ${newStatus}.`,
+        });
+      })
+      .catch((serverError: any) => {
+        const permissionError = new FirestorePermissionError({
+          path: bookingDocRef.path,
+          operation: 'update',
+          requestResourceData: { status: newStatus },
+        });
+        errorEmitter.emit('permission-error', permissionError);
       });
-    } catch (serverError: any) {
-      const permissionError = new FirestorePermissionError({
-        path: bookingDocRef.path,
-        operation: 'update',
-        requestResourceData: { status: newStatus },
-      });
-      errorEmitter.emit('permission-error', permissionError);
-    }
   };
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
       <div className="flex items-center justify-between space-y-2">
         <h2 className="text-3xl font-bold tracking-tight">Manage Bookings</h2>
-        <Button>
-          <PlusCircle className="mr-2 h-4 w-4" /> Add Booking
+        <Button asChild>
+          <Link href="/book">
+            <PlusCircle className="mr-2 h-4 w-4" /> Add Booking
+          </Link>
         </Button>
       </div>
       <Card>
@@ -156,7 +166,8 @@ export default function AdminBookingsPage() {
                     </TableCell>
                     <TableCell>{booking.venueName}</TableCell>
                     <TableCell>
-                      {artistMap.get(booking.artistProfileId) || 'Unknown Artist'}
+                      {artistMap.get(booking.artistProfileId) ||
+                        'Unknown Artist'}
                     </TableCell>
                     <TableCell>
                       <Badge variant={getStatusVariant(booking.status)}>
@@ -177,26 +188,34 @@ export default function AdminBookingsPage() {
                           <DropdownMenuSeparator />
                           <DropdownMenuLabel>Change Status</DropdownMenuLabel>
                           <DropdownMenuItem
-                            onClick={() => handleStatusChange(booking, 'pending')}
+                            onClick={() =>
+                              handleStatusChange(booking, 'pending')
+                            }
                             disabled={booking.status === 'pending'}
                           >
                             Set to Pending
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onClick={() => handleStatusChange(booking, 'confirmed')}
-                             disabled={booking.status === 'confirmed'}
+                            onClick={() =>
+                              handleStatusChange(booking, 'confirmed')
+                            }
+                            disabled={booking.status === 'confirmed'}
                           >
                             Set to Confirmed
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onClick={() => handleStatusChange(booking, 'declined')}
-                             disabled={booking.status === 'declined'}
+                            onClick={() =>
+                              handleStatusChange(booking, 'declined')
+                            }
+                            disabled={booking.status === 'declined'}
                           >
                             Set to Declined
                           </DropdownMenuItem>
-                           <DropdownMenuItem
-                            onClick={() => handleStatusChange(booking, 'completed')}
-                             disabled={booking.status === 'completed'}
+                          <DropdownMenuItem
+                            onClick={() =>
+                              handleStatusChange(booking, 'completed')
+                            }
+                            disabled={booking.status === 'completed'}
                           >
                             Set to Completed
                           </DropdownMenuItem>
