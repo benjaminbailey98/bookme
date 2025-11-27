@@ -28,10 +28,14 @@ import { useAuth, useFirestore } from '@/firebase';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
-import { doc, setDoc, writeBatch } from 'firebase/firestore';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { errorEmitter } from '@/firebase/error-emitter';
-import type { User, ArtistProfile, VenueProfile } from '@/lib/types';
+import { doc, writeBatch, Timestamp } from 'firebase/firestore';
+import {
+  type User,
+  type ArtistProfile,
+  type VenueProfile,
+  type Subscription,
+} from '@/lib/types';
+import { add } from 'date-fns';
 
 // Venue Schema
 const venueFormSchema = z.object({
@@ -77,8 +81,7 @@ function VenueRegistrationForm() {
         data.password
       );
       const user = userCredential.user;
-      
-      // Also update the user's auth profile display name
+
       await updateProfile(user, { displayName: data.companyName });
 
       const batch = writeBatch(firestore);
@@ -96,33 +99,49 @@ function VenueRegistrationForm() {
 
       // Create venue profile document
       const venueProfileRef = doc(firestore, 'venue_profiles', user.uid);
-      const newVenueProfile: Omit<VenueProfile, 'id' | 'userId' | 'companyEmail' | 'companyLogoUrl'> = {
-          companyName: data.companyName,
-          companyPhone: data.phone,
-          // Prefill with some data, but user needs to complete it
-          companyAddress: '',
-          businessHours: '',
-          contactTitle: '',
-          contactName: '',
-          contactEmail: '',
-          contactPhone: '',
+      const newVenueProfile: Partial<VenueProfile> = {
+        companyName: data.companyName,
+        companyPhone: data.phone,
+        companyEmail: user.email!,
+        companyAddress: '',
+        businessHours: '',
+        contactTitle: '',
+        contactName: '',
+        contactEmail: '',
+        contactPhone: '',
       };
-      
       batch.set(venueProfileRef, {
         ...newVenueProfile,
         id: user.uid,
         userId: user.uid,
-        companyEmail: user.email!,
       });
 
+      // Create initial subscription
+      const subscriptionRef = doc(
+        firestore,
+        'users',
+        user.uid,
+        'subscriptions',
+        'default'
+      );
+      const now = new Date();
+      const newSubscription: Omit<Subscription, 'id'> = {
+        userId: user.uid,
+        startDate: Timestamp.fromDate(now),
+        dueDate: Timestamp.fromDate(add(now, { days: 30 })),
+        accountStatus: 'active',
+        paymentStatus: 'paid',
+        paymentHistory: [],
+      };
+      batch.set(subscriptionRef, { ...newSubscription, id: 'default' });
+
       await batch.commit();
-      
+
       toast({
         title: 'Venue Profile Created!',
         description: 'Your account has been created. Redirecting...',
       });
       router.push('/venues/portal/profile');
-
     } catch (error: any) {
       console.error('Sign up error:', error);
       if (error.code === 'auth/email-already-in-use') {
@@ -242,12 +261,11 @@ function ArtistRegistrationForm() {
       );
       const user = userCredential.user;
 
-      // Also update the user's auth profile display name
       await updateProfile(user, { displayName: data.stageName });
-      
+
       const batch = writeBatch(firestore);
 
-      // 1. Create the user document
+      // Create user document
       const userDocRef = doc(firestore, 'users', user.uid);
       const newUserData: User = {
         id: user.uid,
@@ -258,30 +276,48 @@ function ArtistRegistrationForm() {
       };
       batch.set(userDocRef, newUserData);
 
-      // 2. Create the initial artist profile document
+      // Create artist profile document
       const artistProfileRef = doc(firestore, 'artist_profiles', user.uid);
-      const newArtistProfile: Omit<ArtistProfile, 'id' | 'userId' | 'realName' | 'shortBio'> = {
-          stageName: data.stageName,
-          personalEmail: user.email!,
-          personalPhone: data.phone,
+      const newArtistProfile: Partial<ArtistProfile> = {
+        stageName: data.stageName,
+        personalEmail: user.email!,
+        personalPhone: data.phone,
+        realName: '',
+        shortBio: '',
       };
-
       batch.set(artistProfileRef, {
         ...newArtistProfile,
         id: user.uid,
         userId: user.uid,
-        realName: '', // User will fill this in their profile
-        shortBio: '', // User will fill this in
       });
+
+      // Create initial subscription
+      const subscriptionRef = doc(
+        firestore,
+        'users',
+        user.uid,
+        'subscriptions',
+        'default'
+      );
+      const now = new Date();
+      const newSubscription: Omit<Subscription, 'id'> = {
+        userId: user.uid,
+        startDate: Timestamp.fromDate(now),
+        dueDate: Timestamp.fromDate(add(now, { days: 30 })),
+        accountStatus: 'active',
+        paymentStatus: 'paid',
+        paymentHistory: ['INV-TRIAL-001'],
+      };
+      batch.set(subscriptionRef, { ...newSubscription, id: 'default' });
 
       await batch.commit();
 
       toast({
         title: 'Artist Profile Created!',
-        description: 'Your account is being created. You will be redirected to your portal.',
+        description:
+          'Your account is being created. You will be redirected to your portal.',
       });
       router.push('/artists/portal/profile');
-
     } catch (error: any) {
       console.error('Sign up error:', error);
       if (error.code === 'auth/email-already-in-use') {
@@ -434,3 +470,5 @@ export default function SignupPage() {
     </div>
   );
 }
+
+    

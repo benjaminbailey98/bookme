@@ -52,6 +52,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 export default function ArtistSubscriptionPage() {
   const { user } = useUser();
@@ -100,12 +102,12 @@ export default function ArtistSubscriptionPage() {
               description: `Your subscription is now ${newStatus}.`
           });
       } catch (error) {
-          console.error("Failed to update subscription:", error);
-          toast({
-              variant: "destructive",
-              title: "Update Failed",
-              description: "Could not update your subscription status. Please try again."
-          })
+          const permissionError = new FirestorePermissionError({
+            path: subDocRef.path,
+            operation: 'update',
+            requestResourceData: { accountStatus: newStatus }
+          });
+          errorEmitter.emit('permission-error', permissionError);
       } finally {
         setIsActionLoading(false);
       }
@@ -201,7 +203,7 @@ export default function ArtistSubscriptionPage() {
                  </Button>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                     <Button variant="destructive" disabled={isLoading || isActionLoading} className="w-full">
+                     <Button variant="destructive" disabled={isLoading || isActionLoading || subscription?.accountStatus === 'canceled'} className="w-full">
                         <XCircle className="mr-2 h-4 w-4" />
                         Cancel
                     </Button>
@@ -266,9 +268,9 @@ export default function ArtistSubscriptionPage() {
                     ) : subscription?.paymentHistory && subscription.paymentHistory.length > 0 ? (
                         subscription.paymentHistory.map((payment, index) => (
                             <TableRow key={index}>
-                                <TableCell>Awaiting real data</TableCell>
-                                <TableCell>$29.99</TableCell>
-                                <TableCell><Badge variant="default">Paid</Badge></TableCell>
+                                <TableCell>{format(subscription.startDate.toDate(), 'PPP')}</TableCell>
+                                <TableCell>$0.00</TableCell>
+                                <TableCell><Badge variant="default">Trial</Badge></TableCell>
                                 <TableCell className="text-right font-mono">{payment}</TableCell>
                             </TableRow>
                         ))
@@ -286,3 +288,5 @@ export default function ArtistSubscriptionPage() {
     </div>
   );
 }
+
+    

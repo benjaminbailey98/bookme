@@ -203,7 +203,7 @@ export default function VenueSubscriptionPage() {
                  </Button>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                     <Button variant="destructive" disabled={isLoading || isActionLoading} className="w-full">
+                     <Button variant="destructive" disabled={isLoading || isActionLoading || subscription?.accountStatus === 'canceled'} className="w-full">
                         <XCircle className="mr-2 h-4 w-4" />
                         Cancel
                     </Button>
@@ -264,10 +264,10 @@ export default function VenueSubscriptionPage() {
                         </TableRow>
                     ) : subscription?.paymentHistory && subscription.paymentHistory.length > 0 ? (
                         subscription.paymentHistory.map((payment, index) => (
-                            <TableRow key={index}>
-                                <TableCell>Awaiting real data</TableCell>
-                                <TableCell>$29.99</TableCell>
-                                <TableCell><Badge variant="default">Paid</Badge></TableCell>
+                             <TableRow key={index}>
+                                <TableCell>{format(subscription.startDate.toDate(), 'PPP')}</TableCell>
+                                <TableCell>$0.00</TableCell>
+                                <TableCell><Badge variant="default">Trial</Badge></TableCell>
                                 <TableCell className="text-right font-mono">{payment}</TableCell>
                             </TableRow>
                         ))
@@ -285,3 +285,5 @@ export default function VenueSubscriptionPage() {
     </div>
   );
 }
+
+    
