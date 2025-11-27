@@ -171,7 +171,7 @@ service cloud.firestore {
      */
     match /{path=**}/booking_requests/{bookingRequestId} {
         allow list: if (isSignedIn() && request.query.where.size() > 0 && request.query.where[0][2] == request.auth.uid) 
-                    || (isAdmin() && request.query.where.exists(filter, filter[0] == 'status'));
+                    || (isAdmin() && request.query.where.size() > 0 && request.query.where.filter(w => w[0] == 'status').size() > 0);
     }
 
     /**
