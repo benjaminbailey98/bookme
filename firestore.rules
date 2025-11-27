@@ -173,7 +173,7 @@ service cloud.firestore {
      */
     match /{path=**}/booking_requests/{bookingRequestId} {
         allow list: if (isSignedIn() && request.query.where.size() > 0 && request.query.where[0][2] == request.auth.uid) 
-                    || (isAdmin() && request.query.where.size() > 0 && request.query.where[0][0] == 'status');
+                    || (isAdmin() && request.query.where.exists(filter, filter[0] == 'status'));
     }
 
     /**
@@ -200,6 +200,17 @@ service cloud.firestore {
         allow write: if isArtistOwner(artistProfileId) || isAdmin();
       }
     }
+    
+     /**
+     * @description Secures collection group queries for 'availability'.
+     * @path /{path=**}/availability/{availabilityId}
+     * @allow (list) An admin can list all availability entries.
+     * @principle This rule is essential for the master calendar's availability checker.
+     */
+    match /{path=**}/availability/{availabilityId} {
+        allow list: if isAdmin();
+    }
+
 
     /**
      * @description Manages referral records.

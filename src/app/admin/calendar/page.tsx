@@ -1,9 +1,10 @@
+
 'use client';
 
-import { useMemo } from 'react';
-import { collectionGroup, query, where } from 'firebase/firestore';
+import { useMemo, useState } from 'react';
+import { collectionGroup, query, where, collection } from 'firebase/firestore';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import type { BookingRequest } from '@/lib/types';
+import type { BookingRequest, ArtistAvailability, ArtistProfile } from '@/lib/types';
 import {
   Card,
   CardContent,
@@ -13,10 +14,16 @@ import {
 } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 import { EventCalendar } from '@/components/event-calendar';
+import { Calendar } from '@/components/ui/calendar';
+import { format, isSameDay, parseISO } from 'date-fns';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 export default function AdminCalendarPage() {
   const firestore = useFirestore();
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 
+  // 1. Fetch confirmed bookings for the event calendar
   const confirmedBookingsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
     return query(
@@ -25,17 +32,52 @@ export default function AdminCalendarPage() {
     );
   }, [firestore]);
 
-  const { data: bookings, isLoading } =
+  const { data: bookings, isLoading: bookingsLoading } =
     useCollection<BookingRequest>(confirmedBookingsQuery);
 
+  // 2. Fetch all artist profiles
+  const artistsQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'artist_profiles'));
+  }, [firestore]);
+  const { data: artists, isLoading: artistsLoading } = useCollection<ArtistProfile>(artistsQuery);
+
+  // 3. Fetch all availability data
+  const availabilityQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collectionGroup(firestore, 'availability'));
+  }, [firestore]);
+  const { data: allAvailability, isLoading: availabilityLoading } = useCollection<ArtistAvailability>(availabilityQuery);
+
   const calendarEvents = useMemo(() => {
-    if (!bookings) return [];
+    if (!bookings || !artists) return [];
+    const artistMap = new Map(artists.map(a => [a.id, a.stageName]));
     return bookings.map((booking) => ({
-      title: `${booking.venueName} - ${booking.artistProfileId}`, // We'd need to map artist ID to name here
+      title: `${booking.venueName} - ${artistMap.get(booking.artistProfileId) || 'Unknown'}`,
       date: booking.eventDate.toDate(),
       description: `Event Type: ${booking.eventType}`,
     }));
-  }, [bookings]);
+  }, [bookings, artists]);
+
+  // 4. Process availability for the selected date
+  const { available, unavailable } = useMemo(() => {
+    if (!artists || !allAvailability) return { available: [], unavailable: [] };
+
+    const unavailableForDate = allAvailability.filter(avail => 
+        isSameDay(parseISO(avail.unavailableDate), selectedDate)
+    );
+    
+    const unavailableArtistIds = new Set(unavailableForDate.map(a => a.artistProfileId));
+
+    const availableArtists = artists.filter(artist => !unavailableArtistIds.has(artist.id));
+    const unavailableArtists = artists.filter(artist => unavailableArtistIds.has(artist.id));
+
+    return { available: availableArtists, unavailable: unavailableArtists };
+
+  }, [artists, allAvailability, selectedDate]);
+
+
+  const isLoading = bookingsLoading || artistsLoading || availabilityLoading;
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
@@ -57,6 +99,69 @@ export default function AdminCalendarPage() {
           ) : (
             <EventCalendar events={calendarEvents} />
           )}
+        </CardContent>
+      </Card>
+
+       <Card>
+        <CardHeader>
+          <CardTitle>Artist Availability Checker</CardTitle>
+          <CardDescription>
+            Select a date to see which artists are available or unavailable.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="flex justify-center items-center">
+                 <Calendar
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={(date) => date && setSelectedDate(date)}
+                    className="rounded-md border"
+                />
+            </div>
+            <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div>
+                    <h3 className="font-semibold mb-2">Unavailable Artists ({unavailable.length})</h3>
+                    <ScrollArea className="h-72 rounded-md border p-2">
+                        {isLoading ? <Loader2 className="m-auto h-6 w-6 animate-spin"/> :
+                         unavailable.length > 0 ? (
+                            <ul className="space-y-2">
+                                {unavailable.map(artist => (
+                                    <li key={artist.id} className="flex items-center gap-3">
+                                        <Avatar className="h-8 w-8">
+                                            <AvatarImage src={artist.artistProfilePictureUrl} />
+                                            <AvatarFallback>{artist.stageName.charAt(0)}</AvatarFallback>
+                                        </Avatar>
+                                        <span className="text-sm font-medium">{artist.stageName}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        ) : (
+                            <p className="text-sm text-muted-foreground text-center pt-4">No artists are unavailable on {format(selectedDate, 'PPP')}.</p>
+                        )}
+                    </ScrollArea>
+                </div>
+                 <div>
+                    <h3 className="font-semibold mb-2">Available Artists ({available.length})</h3>
+                     <ScrollArea className="h-72 rounded-md border p-2">
+                        {isLoading ? <Loader2 className="m-auto h-6 w-6 animate-spin"/> :
+                         available.length > 0 ? (
+                             <ul className="space-y-2">
+                                {available.map(artist => (
+                                    <li key={artist.id} className="flex items-center gap-3">
+                                        <Avatar className="h-8 w-8">
+                                            <AvatarImage src={artist.artistProfilePictureUrl} />
+                                            <AvatarFallback>{artist.stageName.charAt(0)}</AvatarFallback>
+                                        </Avatar>
+                                        <span className="text-sm font-medium">{artist.stageName}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        ) : (
+                            <p className="text-sm text-muted-foreground text-center pt-4">No artists found.</p>
+                        )}
+                    </ScrollArea>
+                </div>
+            </div>
         </CardContent>
       </Card>
     </div>
