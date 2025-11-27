@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -6,6 +5,8 @@ import {
   query,
   where,
   Timestamp,
+  doc,
+  updateDoc,
 } from 'firebase/firestore';
 import { useFirestore, useUser, useCollection, useMemoFirebase } from '@/firebase';
 import type { BookingRequest } from '@/lib/types';
@@ -28,10 +29,14 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { Loader2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 export default function ArtistBookingsPage() {
   const { user } = useUser();
   const firestore = useFirestore();
+  const { toast } = useToast();
 
   const bookingsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
@@ -42,6 +47,29 @@ export default function ArtistBookingsPage() {
   }, [firestore, user]);
 
   const { data: bookings, isLoading } = useCollection<BookingRequest>(bookingsQuery);
+
+  const handleStatusChange = async (booking: BookingRequest, newStatus: 'confirmed' | 'declined') => {
+    if (!firestore || !user) return;
+    
+    // Path to the booking document is under the venue's profile
+    const bookingDocRef = doc(firestore, 'venue_profiles', booking.venueProfileId, 'booking_requests', booking.id);
+
+    try {
+      await updateDoc(bookingDocRef, { status: newStatus });
+      toast({
+        title: `Booking ${newStatus}`,
+        description: `The request from ${booking.venueName} has been ${newStatus}.`,
+      });
+    } catch (serverError) {
+       const permissionError = new FirestorePermissionError({
+        path: bookingDocRef.path,
+        operation: 'update',
+        requestResourceData: { status: newStatus },
+      });
+      errorEmitter.emit('permission-error', permissionError);
+    }
+  };
+
 
   const getStatusVariant = (status?: string) => {
     switch (status) {
@@ -86,7 +114,7 @@ export default function ArtistBookingsPage() {
                 <TableBody>
                     {isLoading && (
                         <TableRow>
-                            <TableCell colSpan={5} className="text-center">
+                            <TableCell colSpan={5} className="text-center h-24">
                                 <Loader2 className="mx-auto h-8 w-8 animate-spin text-muted-foreground" />
                             </TableCell>
                         </TableRow>
@@ -102,15 +130,34 @@ export default function ArtistBookingsPage() {
                                         {booking.status || 'Pending'}
                                     </Badge>
                                 </TableCell>
-                                <TableCell className="text-right">
-                                    <Button variant="outline" size="sm">View Details</Button>
+                                <TableCell className="text-right space-x-2">
+                                     {(booking.status === 'pending' || !booking.status) && (
+                                        <>
+                                        <Button
+                                            size="sm"
+                                            onClick={() => handleStatusChange(booking, 'confirmed')}
+                                        >
+                                            Confirm
+                                        </Button>
+                                        <Button
+                                            variant="destructive"
+                                            size="sm"
+                                            onClick={() => handleStatusChange(booking, 'declined')}
+                                        >
+                                            Decline
+                                        </Button>
+                                        </>
+                                    )}
+                                    {booking.status !== 'pending' && booking.status &&(
+                                         <Button variant="outline" size="sm" disabled>View Details</Button>
+                                    )}
                                 </TableCell>
                             </TableRow>
                         ))
                     ) : (
                         !isLoading && (
                             <TableRow>
-                                <TableCell colSpan={5} className="text-center text-muted-foreground">
+                                <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
                                     You have no booking requests yet.
                                 </TableCell>
                             </TableRow>

@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   collection,
   query,
@@ -15,7 +15,7 @@ import {
   useCollection,
   useMemoFirebase,
 } from '@/firebase';
-import type { BookingRequest } from '@/lib/types';
+import type { BookingRequest, ArtistProfile } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -62,12 +62,26 @@ export default function VenueBookingsPage() {
 
   const bookingsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
-    // Assuming venue profiles are keyed by user.uid
     return query(collection(firestore, 'venue_profiles', user.uid, 'booking_requests'));
   }, [firestore, user]);
 
-  const { data: bookings, isLoading } =
+  const { data: bookings, isLoading: bookingsLoading } =
     useCollection<BookingRequest>(bookingsQuery);
+
+  const artistsQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'artist_profiles'));
+  }, [firestore]);
+
+  const { data: artists, isLoading: artistsLoading } =
+    useCollection<ArtistProfile>(artistsQuery);
+
+  const artistMap = useMemo(() => {
+    if (!artists) return new Map();
+    return new Map(artists.map((artist) => [artist.id, artist.stageName]));
+  }, [artists]);
+
+  const isLoading = bookingsLoading || artistsLoading;
 
   const handleStatusChange = async (bookingId: string, newStatus: string) => {
     if (!user || !firestore) return;
@@ -99,27 +113,25 @@ export default function VenueBookingsPage() {
     }
     setIsSubmitting(true);
     
-    // Create a new review document
     const reviewData = {
       bookingRequestId: selectedBooking.id,
       artistProfileId: selectedBooking.artistProfileId,
-      venueProfileId: user.uid, // Venue's user ID is their profile ID
+      venueProfileId: user.uid,
       rating,
       reviewText: review,
-      createdAt: new Date(), // Using client-side date, consider server timestamp
+      createdAt: new Date(),
     };
 
     const reviewsCollection = collection(firestore, 'reviews');
     try {
       await addDoc(reviewsCollection, reviewData);
       toast({ title: 'Review Submitted', description: 'Thank you for your feedback!' });
-      // Close dialog and reset state
       setRating(0);
       setReview('');
-      setSelectedBooking(null); // This will cause the dialog to close if it's tied to this state
+      setSelectedBooking(null); 
     } catch (serverError) {
        const permissionError = new FirestorePermissionError({
-        path: 'reviews', // Path for creation
+        path: 'reviews',
         operation: 'create',
         requestResourceData: reviewData,
       });
@@ -175,7 +187,7 @@ export default function VenueBookingsPage() {
             <TableBody>
               {isLoading && (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center">
+                  <TableCell colSpan={4} className="h-24 text-center">
                     <Loader2 className="mx-auto h-8 w-8 animate-spin text-muted-foreground" />
                   </TableCell>
                 </TableRow>
@@ -186,7 +198,7 @@ export default function VenueBookingsPage() {
                     <TableCell className="font-medium">
                       {booking.eventDate.toDate ? format(booking.eventDate.toDate(), 'PPP') : format(new Date(booking.eventDate), 'PPP')}
                     </TableCell>
-                    <TableCell>{booking.artistProfileId}</TableCell>
+                    <TableCell>{artistMap.get(booking.artistProfileId) || 'Unknown Artist'}</TableCell>
                     <TableCell>
                       <Badge variant={getStatusVariant(booking.status)}>
                         {booking.status || 'Pending'}
@@ -224,7 +236,7 @@ export default function VenueBookingsPage() {
                           <DialogContent>
                             <DialogHeader>
                               <DialogTitle>
-                                Rate {booking.artistProfileId}'s Performance
+                                Rate {artistMap.get(booking.artistProfileId)}'s Performance
                               </DialogTitle>
                             </DialogHeader>
                             <div className="py-4 space-y-4">
@@ -270,14 +282,10 @@ export default function VenueBookingsPage() {
                         <>
                            <Button
                             size="sm"
-                            onClick={() => handleStatusChange(booking.id, 'confirmed')}>
-                            Confirm
-                           </Button>
-                           <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => handleStatusChange(booking.id, 'declined')}>
-                            Decline
+                            disabled
+                            variant="outline"
+                            >
+                            Awaiting Artist
                            </Button>
                         </>
                       )}
@@ -289,7 +297,7 @@ export default function VenueBookingsPage() {
                   <TableRow>
                     <TableCell
                       colSpan={4}
-                      className="text-center text-muted-foreground py-10"
+                      className="h-24 text-center text-muted-foreground"
                     >
                       You have no booking requests yet.
                     </TableCell>

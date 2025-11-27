@@ -151,7 +151,7 @@ service cloud.firestore {
       match /booking_requests/{bookingRequestId} {
         allow get: if isSignedIn() && isBookingParticipant(resource);
         allow create: if isSignedIn(); // Allow any signed-in user to create a request (one-time booker or venue owner)
-        allow update: if isSignedIn() && isExistingDoc() && isBookingParticipant(resource);
+        allow update: if isSignedIn() && isExistingDoc() && isBookingParticipant(resource) && request.resource.data.status != resource.data.status;
         allow delete: if isSignedIn() && isExistingDoc() && isBookingParticipant(resource);
         allow list: if isOwner(venueProfileId);
       }
