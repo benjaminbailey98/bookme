@@ -41,6 +41,7 @@ export async function createAccountAndProfile(
       email: profileData.personalEmail,
       registrationDate: new Date().toISOString(),
       isVenue: false,
+      displayName: profileData.stageName,
     };
     await setDoc(userDocRef, newUserData);
 

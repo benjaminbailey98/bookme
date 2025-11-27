@@ -1,4 +1,3 @@
-
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -40,7 +39,7 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { CalendarIcon, HelpCircle, Loader2, Sparkles } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import {
   Tooltip,
@@ -53,8 +52,8 @@ import { getSuggestions, submitBookingRequest } from './actions';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query } from 'firebase/firestore';
-import type { ArtistProfile } from '@/lib/types';
+import { collection, query, where } from 'firebase/firestore';
+import type { ArtistProfile, ArtistAvailability } from '@/lib/types';
 
 const bookingFormSchema = z.object({
   eventDate: z.date({
@@ -145,13 +144,30 @@ export function BookingForm() {
   const { data: artists, isLoading: artistsLoading } =
     useCollection<ArtistProfile>(artistsQuery);
 
-
   const form = useForm<BookingFormValues>({
     resolver: zodResolver(bookingFormSchema),
     defaultValues: {
       isTicketedEvent: false,
     },
   });
+
+  const selectedArtistId = form.watch('artistProfileId');
+  
+  const availabilityQuery = useMemoFirebase(() => {
+    if (!firestore || !selectedArtistId) return null;
+    return query(collection(firestore, `artist_profiles/${selectedArtistId}/availability`));
+  }, [firestore, selectedArtistId]);
+
+  const { data: availabilityData } = useCollection<ArtistAvailability>(availabilityQuery);
+
+  const unavailableDates = useMemoFirebase(() => {
+    if (!availabilityData) return [];
+    // For now, only full-day unavailability is considered.
+    return availabilityData
+      .filter(a => a.isAllDay)
+      .map(a => parseISO(a.unavailableDate));
+  }, [availabilityData]);
+
 
   useEffect(() => {
     const artistId = searchParams.get('artist');
@@ -258,6 +274,43 @@ export function BookingForm() {
             </CardDescription>
           </CardHeader>
           <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
+             <FormField
+              control={form.control}
+              name="artistProfileId"
+              render={({ field }) => (
+                <FormItem className="md:col-span-2">
+                  <FormLabel className="flex items-center gap-2">
+                    Select an Artist
+                     <TooltipWrapper content={formFields.find(f => f.name === 'artistProfileId')?.tooltip || ''}>
+                      <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                    </TooltipWrapper>
+                  </FormLabel>
+                  <Select
+                    onValueChange={handleArtistSelect}
+                    value={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder={artistsLoading ? "Loading artists..." : "Choose an artist"} />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {artistsLoading ? (
+                        <SelectItem value="loading" disabled>Loading...</SelectItem>
+                      ) : (
+                        artists?.map((artist) => (
+                            <SelectItem key={artist.id} value={artist.id}>
+                                {artist.stageName}
+                            </SelectItem>
+                        ))
+                      )}
+                      <SelectItem value="browse">Browse from artist catalog...</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <FormField
               control={form.control}
               name="eventDate"
@@ -278,6 +331,7 @@ export function BookingForm() {
                             'w-full pl-3 text-left font-normal',
                             !field.value && 'text-muted-foreground'
                           )}
+                          disabled={!selectedArtistId}
                         >
                           {field.value ? (
                             format(field.value, 'PPP')
@@ -293,11 +347,18 @@ export function BookingForm() {
                         mode="single"
                         selected={field.value}
                         onSelect={field.onChange}
-                        disabled={(date) => date < new Date() || date < new Date('1900-01-01')}
+                        disabled={(date) =>
+                           date < new Date() ||
+                           date < new Date('1900-01-01') ||
+                           unavailableDates.some(unavailableDate => 
+                            new Date(date).setHours(0,0,0,0) === new Date(unavailableDate).setHours(0,0,0,0)
+                           )
+                        }
                         initialFocus
                       />
                     </PopoverContent>
                   </Popover>
+                  {!selectedArtistId && <FormDescription>Please select an artist to see their availability.</FormDescription>}
                   <FormMessage />
                 </FormItem>
               )}
@@ -693,43 +754,6 @@ export function BookingForm() {
                 />
               )}
             </div>
-             <FormField
-              control={form.control}
-              name="artistProfileId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="flex items-center gap-2">
-                    Select an Artist
-                     <TooltipWrapper content={formFields.find(f => f.name === 'artistProfileId')?.tooltip || ''}>
-                      <HelpCircle className="h-4 w-4 text-muted-foreground" />
-                    </TooltipWrapper>
-                  </FormLabel>
-                  <Select
-                    onValueChange={handleArtistSelect}
-                    value={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder={artistsLoading ? "Loading artists..." : "Choose an artist"} />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {artistsLoading ? (
-                        <SelectItem value="loading" disabled>Loading...</SelectItem>
-                      ) : (
-                        artists?.map((artist) => (
-                            <SelectItem key={artist.id} value={artist.id}>
-                                {artist.stageName}
-                            </SelectItem>
-                        ))
-                      )}
-                      <SelectItem value="browse">Browse from artist catalog...</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
           </CardContent>
         </Card>
 
@@ -823,5 +847,3 @@ export function BookingForm() {
     </Form>
   );
 }
-
-    
