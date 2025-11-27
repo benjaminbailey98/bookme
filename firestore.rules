@@ -102,19 +102,6 @@ service cloud.firestore {
     function isAdmin() {
       return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
     }
-    
-    /**
-     * Checks if the incoming query is specifically for the initial admin check.
-     * This is a very narrow rule to allow the UI to redirect to the admin registration page.
-     * It specifically checks for a limit of 1 and a where clause on the 'isAdmin' field.
-     */
-    function isCheckingForFirstAdmin() {
-       return request.auth == null
-              && request.query.limit == 1 
-              && request.query.wheres[0].path.string() == 'isAdmin'
-              && request.query.wheres[0].op == '=='
-              && request.query.wheres[0].value == true;
-    }
 
 
     //-------------------------------------------------------------------------
@@ -130,7 +117,7 @@ service cloud.firestore {
      */
     match /users/{userId} {
       allow get: if isOwner(userId) || isAdmin();
-      allow list: if isAdmin() || isCheckingForFirstAdmin();
+      allow list: if isAdmin() || (request.auth == null && request.query.limit == 1);
       allow create: if request.auth != null && request.auth.uid == userId;
       allow update: if isOwner(userId) || isAdmin();
       allow delete: if false;
@@ -250,5 +237,3 @@ service cloud.firestore {
     }
   }
 }
-
-    
