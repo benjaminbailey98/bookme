@@ -72,19 +72,21 @@ export default function ArtistsPage() {
 
             return(
             <Card key={artist.id} className="flex flex-col">
-              <CardContent className="p-6 flex-grow">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                  <div className="flex flex-col items-center sm:items-start text-center sm:text-left">
-                    <div className="w-32 h-32 relative mb-4">
-                      <Image
+              <CardHeader>
+                  <div className="relative aspect-video w-full">
+                     <Image
                         src={image}
                         alt={artist.stageName}
                         fill
-                        className="rounded-full object-cover"
+                        className="rounded-t-lg object-cover"
                         data-ai-hint={imageHint}
                       />
-                    </div>
-                    <div className="flex items-center gap-4">
+                  </div>
+              </CardHeader>
+              <CardContent className="flex-grow">
+                <CardTitle className="mb-2">{artist.stageName}</CardTitle>
+                <CardDescription className="line-clamp-3">{artist.shortBio}</CardDescription>
+                 <div className="flex items-center gap-4 mt-4">
                       {artist.youtubeUrl && (
                         <Link
                           href={artist.youtubeUrl}
@@ -116,45 +118,11 @@ export default function ArtistsPage() {
                         </Link>
                       )}
                     </div>
-                  </div>
-                  <div className="sm:col-span-2">
-                    <CardTitle className="mb-2">{artist.stageName}</CardTitle>
-                    <CardDescription>{artist.shortBio}</CardDescription>
-                  </div>
-                </div>
               </CardContent>
-              <CardFooter className="p-6 pt-0 flex justify-between items-center">
-                {artist.artistPerformingVideoUrl ? (
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button variant="outline">
-                        <PlayCircle className="mr-2 h-4 w-4" />
-                        Watch Video
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-3xl">
-                      <DialogHeader>
-                        <DialogTitle>{artist.stageName} - Video</DialogTitle>
-                      </DialogHeader>
-                      <div className="aspect-video">
-                        <iframe
-                          width="100%"
-                          height="100%"
-                          src={artist.artistPerformingVideoUrl}
-                          title="YouTube video player"
-                          frameBorder="0"
-                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                          allowFullScreen
-                        ></iframe>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-                ) : (
-                  <div /> // Empty div to maintain spacing
-                )}
-                <Button asChild>
-                  <Link href={`/book?artist=${artist.id}`}>
-                    Book {artist.stageName}
+              <CardFooter className="p-6 pt-0">
+                <Button asChild className="w-full">
+                  <Link href={`/artists/${artist.id}`}>
+                    View Profile
                   </Link>
                 </Button>
               </CardFooter>

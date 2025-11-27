@@ -74,7 +74,7 @@ export default function AdminVenuesPage() {
                     <TableCell>{venue.companyEmail}</TableCell>
                     <TableCell className="text-right">
                        <Button asChild variant="outline" size="sm">
-                         <Link href={`/venues/portal/profile?venueId=${venue.id}`} target="_blank">
+                         <Link href={`/venues/${venue.id}`} target="_blank">
                             View Profile
                          </Link>
                        </Button>
@@ -100,5 +100,3 @@ export default function AdminVenuesPage() {
     </div>
   );
 }
-
-    

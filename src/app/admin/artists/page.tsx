@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -101,7 +102,7 @@ export default function AdminArtistsPage() {
                     <TableCell>{artist.personalEmail}</TableCell>
                     <TableCell className="text-right">
                       <Button asChild variant="outline" size="sm">
-                        <Link href={`/artists/portal/profile?artistId=${artist.id}`} target="_blank">
+                        <Link href={`/artists/${artist.id}`} target="_blank">
                           View Profile
                         </Link>
                       </Button>
