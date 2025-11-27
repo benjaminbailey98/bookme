@@ -9,18 +9,19 @@ import { Menu, LogOut } from 'lucide-react';
 import { useUser, useAuth } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation';
 
 const navLinks = [
   { href: '/artists', label: 'Browse Artists' },
   { href: '/artists/portal', label: 'Artist Portal' },
-  { href: '/venues', label: 'Venue Portal' },
-  { href: '/admin', label: 'Admin' },
+  { href: '/venues/portal', label: 'Venue Portal' },
 ];
 
 export default function Header() {
   const { user, isUserLoading: loading } = useUser();
   const auth = useAuth();
   const { toast } = useToast();
+  const router = useRouter();
 
   const handleLogout = async () => {
     if (!auth) return;
@@ -30,6 +31,7 @@ export default function Header() {
         title: 'Logged Out',
         description: 'You have been successfully logged out.',
       });
+      router.push('/');
     } catch (error) {
       console.error('Error signing out:', error);
       toast({
@@ -39,6 +41,8 @@ export default function Header() {
       });
     }
   };
+
+  const adminHref = user ? '/admin' : '/login?redirect=/admin';
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -60,6 +64,12 @@ export default function Header() {
                 {link.label}
               </Link>
             ))}
+             <Link
+                href={adminHref}
+                className="transition-colors hover:text-foreground/80 text-foreground/60"
+              >
+                Admin
+              </Link>
           </nav>
         </div>
 
@@ -78,7 +88,7 @@ export default function Header() {
                 <span className="font-bold font-headline">Vibe Request</span>
               </Link>
               <nav className="flex flex-col space-y-4">
-                {navLinks.map((link) => (
+                {[...navLinks, { href: adminHref, label: 'Admin' }].map((link) => (
                   <Link key={link.href} href={link.href} className="text-lg">
                     {link.label}
                   </Link>

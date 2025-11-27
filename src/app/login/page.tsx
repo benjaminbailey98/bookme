@@ -25,7 +25,7 @@ import { useToast } from '@/hooks/use-toast';
 import { PasswordInput } from '@/components/ui/password-input';
 import { useAuth } from '@/firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -40,6 +40,7 @@ export default function LoginPage() {
   const { toast } = useToast();
   const auth = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginFormSchema),
     defaultValues: {
@@ -57,7 +58,8 @@ export default function LoginPage() {
         title: 'Login Successful',
         description: "Welcome back! You're now logged in.",
       });
-      router.push('/');
+      const redirectUrl = searchParams.get('redirect') || '/';
+      router.push(redirectUrl);
     } catch (error: any) {
       console.error('Login error:', error);
       let description = 'An unexpected error occurred during login.';

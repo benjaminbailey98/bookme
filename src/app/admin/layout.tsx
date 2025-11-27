@@ -24,13 +24,17 @@ import {
   LogOut,
   Gift,
   Star,
-  MessageSquare
+  MessageSquare,
+  Loader2,
 } from 'lucide-react';
 import { Icons } from '@/components/icons';
-import { useAuth } from '@/firebase';
+import { useAuth, useUser } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 const sidebarNavLinks = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
@@ -50,8 +54,10 @@ export default function AdminPortalLayout({
   children: React.ReactNode;
 }) {
   const auth = useAuth();
+  const { user, isUserLoading } = useUser();
   const { toast } = useToast();
   const pathname = usePathname();
+  const router = useRouter();
 
   const handleLogout = async () => {
     if (!auth) return;
@@ -61,7 +67,7 @@ export default function AdminPortalLayout({
         title: 'Logged Out',
         description: 'You have been successfully logged out.',
       });
-      // Redirect to home or login page after logout
+      router.push('/');
     } catch (error) {
       console.error('Error signing out:', error);
       toast({
@@ -71,6 +77,34 @@ export default function AdminPortalLayout({
       });
     }
   };
+
+  if (isUserLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-16 w-16 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="container flex h-screen items-center justify-center">
+        <Card className="w-full max-w-md text-center">
+          <CardHeader>
+            <CardTitle>Access Denied</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-muted-foreground">
+              You must be logged in to access the admin portal.
+            </p>
+            <Button asChild>
+              <Link href="/login">Login</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <SidebarProvider>
