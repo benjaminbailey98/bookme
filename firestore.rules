@@ -109,9 +109,9 @@ service cloud.firestore {
      */
     function isCheckingForFirstAdmin() {
        return request.query.limit == 1 
-              && request.query.where[0][0] == 'isAdmin' 
-              && request.query.where[0][1] == '==' 
-              && request.query.where[0][2] == true;
+              && request.query.where[0] == 'isAdmin' 
+              && request.query.where[1] == '==' 
+              && request.query.where[2] == true;
     }
 
 
