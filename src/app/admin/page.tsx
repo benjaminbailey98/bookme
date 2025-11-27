@@ -4,7 +4,7 @@
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, Building, ListMusic, UserCheck, Star } from 'lucide-react';
-import { collection, query, where } from 'firebase/firestore';
+import { collection, query, where, collectionGroup } from 'firebase/firestore';
 import type { User, ArtistProfile, VenueProfile, BookingRequest } from '@/lib/types';
 import { useMemo } from 'react';
 import { Loader2 } from 'lucide-react';
