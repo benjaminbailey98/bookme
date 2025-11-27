@@ -117,7 +117,7 @@ service cloud.firestore {
      */
     match /users/{userId} {
       allow get: if isOwner(userId) || isAdmin();
-      allow list: if isAdmin();
+      allow list: if isSignedIn() || isAdmin();
       allow create: if isOwner(userId) && request.resource.data.id == userId;
       allow update: if isOwner(userId) || isAdmin();
       allow delete: if false;
@@ -171,7 +171,7 @@ service cloud.firestore {
      */
     match /{path=**}/booking_requests/{bookingRequestId} {
         allow list: if (isSignedIn() && request.query.where.size() > 0 && request.query.where[0][2] == request.auth.uid) 
-                    || isAdmin();
+                    || isSignedIn();
     }
 
     /**
@@ -206,7 +206,7 @@ service cloud.firestore {
      * @principle This rule is essential for the master calendar's availability checker.
      */
     match /{path=**}/availability/{availabilityId} {
-        allow list: if isAdmin();
+        allow list: if isSignedIn() || isAdmin();
     }
 
 
@@ -232,7 +232,7 @@ service cloud.firestore {
      * @deny (update, delete) Reviews are immutable.
      */
     match /reviews/{reviewId} {
-      allow get, list: if isAdmin();
+      allow get, list: if isSignedIn() || isAdmin();
       allow create: if isSignedIn() && isOwner(request.resource.data.reviewerId);
       allow update, delete: if false;
     }
