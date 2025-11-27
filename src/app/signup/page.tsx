@@ -28,9 +28,10 @@ import { useAuth, useFirestore } from '@/firebase';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, writeBatch } from 'firebase/firestore';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
+import type { User, ArtistProfile, VenueProfile } from '@/lib/types';
 
 // Venue Schema
 const venueFormSchema = z.object({
@@ -77,28 +78,47 @@ function VenueRegistrationForm() {
       );
       const user = userCredential.user;
 
+      const batch = writeBatch(firestore);
+
+      // Create user document
       const userDocRef = doc(firestore, 'users', user.uid);
-      const userData = {
+      const newUserData: User = {
         id: user.uid,
-        email: user.email,
+        email: user.email!,
         registrationDate: new Date().toISOString(),
         isVenue: true,
+        displayName: data.companyName,
+      };
+      batch.set(userDocRef, newUserData);
+
+      // Create venue profile document
+      const venueProfileRef = doc(firestore, 'venue_profiles', user.uid);
+      const newVenueProfile: Omit<VenueProfile, 'id' | 'userId' | 'companyEmail'> & Partial<VenueProfile> = {
+          companyName: data.companyName,
+          companyPhone: data.phone,
+          // Prefill with some data, but user needs to complete it
+          companyAddress: '',
+          businessHours: '',
+          contactTitle: '',
+          contactName: '',
+          contactEmail: '',
+          contactPhone: '',
       };
       
-      setDoc(userDocRef, userData).catch((serverError) => {
-        const permissionError = new FirestorePermissionError({
-          path: userDocRef.path,
-          operation: 'create',
-          requestResourceData: userData,
-        });
-        errorEmitter.emit('permission-error', permissionError);
+      batch.set(venueProfileRef, {
+        ...newVenueProfile,
+        id: user.uid,
+        userId: user.uid,
+        companyEmail: user.email!,
       });
+
+      await batch.commit();
       
       toast({
         title: 'Venue Profile Created!',
         description: 'Your account has been created. Redirecting...',
       });
-      router.push('/venues');
+      router.push('/venues/portal/profile');
 
     } catch (error: any) {
       console.error('Sign up error:', error);
@@ -219,28 +239,42 @@ function ArtistRegistrationForm() {
       );
       const user = userCredential.user;
       
+      const batch = writeBatch(firestore);
+
+      // 1. Create the user document
       const userDocRef = doc(firestore, 'users', user.uid);
-      const userData = {
+      const newUserData: User = {
         id: user.uid,
-        email: user.email,
+        email: user.email!,
         registrationDate: new Date().toISOString(),
         isVenue: false,
+        displayName: data.stageName,
+      };
+      batch.set(userDocRef, newUserData);
+
+      // 2. Create the initial artist profile document
+      const artistProfileRef = doc(firestore, 'artist_profiles', user.uid);
+      const newArtistProfile: Omit<ArtistProfile, 'id' | 'userId'> & Partial<ArtistProfile> = {
+          stageName: data.stageName,
+          realName: '', // User will fill this in their profile
+          personalEmail: user.email!,
+          personalPhone: data.phone,
+          shortBio: '', // User will fill this in
       };
 
-      setDoc(userDocRef, userData).catch((serverError) => {
-        const permissionError = new FirestorePermissionError({
-          path: userDocRef.path,
-          operation: 'create',
-          requestResourceData: userData,
-        });
-        errorEmitter.emit('permission-error', permissionError);
+      batch.set(artistProfileRef, {
+        ...newArtistProfile,
+        id: user.uid,
+        userId: user.uid,
       });
+
+      await batch.commit();
 
       toast({
         title: 'Artist Profile Created!',
         description: 'Your account is being created. You will be redirected to your portal.',
       });
-      router.push('/artists/portal');
+      router.push('/artists/portal/profile');
 
     } catch (error: any) {
       console.error('Sign up error:', error);
@@ -394,3 +428,5 @@ export default function SignupPage() {
     </div>
   );
 }
+
+    

@@ -52,7 +52,9 @@ import { useEffect, useState, useTransition } from 'react';
 import { getSuggestions, submitBookingRequest } from './actions';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useUser } from '@/firebase';
+import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, query } from 'firebase/firestore';
+import type { ArtistProfile } from '@/lib/types';
 
 const bookingFormSchema = z.object({
   eventDate: z.date({
@@ -128,11 +130,21 @@ const TooltipWrapper = ({
 export function BookingForm() {
   const { toast } = useToast();
   const { user } = useUser();
+  const firestore = useFirestore();
   const [isAiPending, startAiTransition] = useTransition();
   const [isSubmitPending, startSubmitTransition] = useTransition();
   const [aiNotes, setAiNotes] = useState<string | null>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  const artistsQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'artist_profiles'));
+  }, [firestore]);
+
+  const { data: artists, isLoading: artistsLoading } =
+    useCollection<ArtistProfile>(artistsQuery);
+
 
   const form = useForm<BookingFormValues>({
     resolver: zodResolver(bookingFormSchema),
@@ -698,14 +710,19 @@ export function BookingForm() {
                   >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Choose an artist" />
+                        <SelectValue placeholder={artistsLoading ? "Loading artists..." : "Choose an artist"} />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="benji-muziq">Benji Muziq</SelectItem>
-                      <SelectItem value="vibe-setters">Vibe Setters</SelectItem>
-                      <SelectItem value="dj-smooth">DJ Smooth</SelectItem>
-                      <SelectItem value="acoustic-soul">Acoustic Soul</SelectItem>
+                      {artistsLoading ? (
+                        <SelectItem value="loading" disabled>Loading...</SelectItem>
+                      ) : (
+                        artists?.map((artist) => (
+                            <SelectItem key={artist.id} value={artist.id}>
+                                {artist.stageName}
+                            </SelectItem>
+                        ))
+                      )}
                       <SelectItem value="browse">Browse from artist catalog...</SelectItem>
                     </SelectContent>
                   </Select>
@@ -766,7 +783,7 @@ export function BookingForm() {
                       Contact Email
                        <TooltipWrapper content={formFields.find(f => f.name === 'contactEmail')?.tooltip || ''}>
                         <HelpCircle className="h-4 w-4 text-muted-foreground" />
-                      </FormLabel>
+                      </TooltipWrapper>
                     </FormLabel>
                     <FormControl>
                       <Input placeholder="jane.doe@example.com" {...field} />
