@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -196,7 +195,7 @@ export default function VenueBookingsPage() {
                 bookings.map((booking) => (
                   <TableRow key={booking.id}>
                     <TableCell className="font-medium">
-                      {booking.eventDate.toDate ? format(booking.eventDate.toDate(), 'PPP') : format(new Date(booking.eventDate), 'PPP')}
+                      {booking.eventDate.toDate ? format(booking.eventDate.toDate(), 'PPP') : 'Invalid Date'}
                     </TableCell>
                     <TableCell>{artistMap.get(booking.artistProfileId) || 'Unknown Artist'}</TableCell>
                     <TableCell>
