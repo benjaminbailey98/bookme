@@ -7,9 +7,11 @@ import {
   Timestamp,
   doc,
   updateDoc,
+  collection,
+  addDoc,
 } from 'firebase/firestore';
 import { useFirestore, useUser, useCollection, useMemoFirebase } from '@/firebase';
-import type { BookingRequest } from '@/lib/types';
+import type { BookingRequest, Review } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -26,17 +28,34 @@ import {
     TableHeader,
     TableRow,
   } from "@/components/ui/table"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+  DialogClose,
+} from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Star } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import { useState } from 'react';
 
 export default function ArtistBookingsPage() {
   const { user } = useUser();
   const firestore = useFirestore();
   const { toast } = useToast();
+  const [selectedBooking, setSelectedBooking] = useState<BookingRequest | null>(null);
+  const [rating, setRating] = useState(0);
+  const [review, setReview] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
 
   const bookingsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
@@ -48,7 +67,7 @@ export default function ArtistBookingsPage() {
 
   const { data: bookings, isLoading } = useCollection<BookingRequest>(bookingsQuery);
 
-  const handleStatusChange = async (booking: BookingRequest, newStatus: 'confirmed' | 'declined') => {
+  const handleStatusChange = async (booking: BookingRequest, newStatus: 'confirmed' | 'declined' | 'completed') => {
     if (!firestore || !user) return;
     
     // Path to the booking document is under the venue's profile
@@ -70,6 +89,46 @@ export default function ArtistBookingsPage() {
     }
   };
 
+  const handleReviewSubmit = async () => {
+    if (!user || !firestore || !selectedBooking || rating === 0) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Please select a rating to submit your review.',
+      });
+      return;
+    }
+    setIsSubmitting(true);
+    
+    const reviewData: Omit<Review, 'id' | 'createdAt'> = {
+      bookingRequestId: selectedBooking.id,
+      reviewerId: user.uid,
+      revieweeId: selectedBooking.venueProfileId, // Artist reviews the venue
+      reviewerRole: 'artist',
+      rating,
+      reviewText: review,
+    };
+
+    const reviewsCollection = collection(firestore, 'reviews');
+    try {
+      await addDoc(reviewsCollection, { ...reviewData, createdAt: new Date() });
+      toast({ title: 'Review Submitted', description: 'Thank you for your feedback!' });
+      // Close dialog
+      setSelectedBooking(null); 
+      setRating(0);
+      setReview('');
+    } catch (serverError) {
+       const permissionError = new FirestorePermissionError({
+        path: 'reviews',
+        operation: 'create',
+        requestResourceData: reviewData,
+      });
+      errorEmitter.emit('permission-error', permissionError);
+    } finally {
+        setIsSubmitting(false);
+    }
+  };
+
 
   const getStatusVariant = (status?: string) => {
     switch (status) {
@@ -79,6 +138,8 @@ export default function ArtistBookingsPage() {
             return 'secondary';
         case 'declined':
             return 'destructive';
+        case 'completed':
+            return 'outline';
         default:
             return 'outline';
     }
@@ -148,7 +209,80 @@ export default function ArtistBookingsPage() {
                                         </Button>
                                         </>
                                     )}
-                                    {booking.status !== 'pending' && booking.status &&(
+                                    {booking.status === 'confirmed' && new Date() > (booking.eventDate.toDate ? booking.eventDate.toDate() : new Date()) && (
+                                      <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => handleStatusChange(booking, 'completed')}>
+                                          Mark as Completed
+                                      </Button>
+                                    )}
+                                    {booking.status === 'completed' && (
+                                      <Dialog
+                                        onOpenChange={(open) => {
+                                          if (!open) {
+                                            setSelectedBooking(null);
+                                            setRating(0);
+                                            setReview('');
+                                          }
+                                        }}
+                                      >
+                                        <DialogTrigger asChild>
+                                          <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => setSelectedBooking(booking)}
+                                          >
+                                            <Star className="mr-2 h-4 w-4" />
+                                            Rate Venue
+                                          </Button>
+                                        </DialogTrigger>
+                                        <DialogContent>
+                                          <DialogHeader>
+                                            <DialogTitle>
+                                              Rate your experience at {booking.venueName}
+                                            </DialogTitle>
+                                          </DialogHeader>
+                                          <div className="py-4 space-y-4">
+                                            <div className="space-y-2">
+                                              <Label>Rating</Label>
+                                              <div className="flex gap-1">
+                                                {[1, 2, 3, 4, 5].map((star) => (
+                                                  <Star
+                                                    key={star}
+                                                    className={`h-6 w-6 cursor-pointer ${
+                                                      star <= rating
+                                                        ? 'text-primary fill-primary'
+                                                        : 'text-muted-foreground'
+                                                    }`}
+                                                    onClick={() => setRating(star)}
+                                                  />
+                                                ))}
+                                              </div>
+                                            </div>
+                                            <div className="space-y-2">
+                                              <Label htmlFor="review">Review (Optional)</Label>
+                                              <Textarea
+                                                id="review"
+                                                placeholder="How was the venue? Was communication good?"
+                                                value={review}
+                                                onChange={(e) => setReview(e.target.value)}
+                                              />
+                                            </div>
+                                          </div>
+                                          <DialogFooter>
+                                            <DialogClose asChild>
+                                              <Button variant="outline">Cancel</Button>
+                                            </DialogClose>
+                                            <Button onClick={handleReviewSubmit} disabled={isSubmitting}>
+                                              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                              Submit Review
+                                            </Button>
+                                          </DialogFooter>
+                                        </DialogContent>
+                                      </Dialog>
+                                    )}
+                                    {booking.status === 'declined' &&(
                                          <Button variant="outline" size="sm" disabled>View Details</Button>
                                     )}
                                 </TableCell>

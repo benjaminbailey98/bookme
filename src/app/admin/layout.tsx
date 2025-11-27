@@ -23,7 +23,8 @@ import {
   CreditCard,
   LogOut,
   Gift,
-  Star
+  Star,
+  MessageSquare
 } from 'lucide-react';
 import { Icons } from '@/components/icons';
 import { useAuth } from '@/firebase';
@@ -38,6 +39,7 @@ const sidebarNavLinks = [
   { href: '/admin/venues', label: 'Venues', icon: Building },
   { href: '/admin/bookings', label: 'Bookings', icon: ListMusic },
   { href: '/admin/calendar', label: 'Master Calendar', icon: Calendar },
+  { href: '/admin/reviews', label: 'Reviews', icon: MessageSquare },
   { href: '/admin/referrals', label: 'Referrals', icon: Gift },
   { href: '/admin/subscriptions', label: 'Subscriptions', icon: CreditCard },
 ];

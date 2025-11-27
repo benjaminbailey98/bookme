@@ -104,9 +104,10 @@ export interface Subscription {
 export interface Review {
     id: string;
     bookingRequestId: string;
-    artistProfileId: string;
-    venueProfileId: string;
+    reviewerId: string; // UID of the user leaving the review
+    revieweeId: string; // UID of the user being reviewed
+    reviewerRole: 'artist' | 'venue';
     rating: number; // 1-5
-    reviewText: string;
+    reviewText?: string;
     createdAt: Timestamp;
 }

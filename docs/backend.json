@@ -442,17 +442,18 @@
         "$schema": "http://json-schema.org/draft-07/schema#",
         "title": "Review",
         "type": "object",
-        "description": "Represents a review of an artist by a venue.",
+        "description": "Represents a review of an artist by a venue, or a venue by an artist.",
         "properties": {
             "id": { "type": "string" },
             "bookingRequestId": { "type": "string" },
-            "artistProfileId": { "type": "string" },
-            "venueProfileId": { "type": "string" },
+            "reviewerId": { "type": "string", "description": "The UID of the user leaving the review." },
+            "revieweeId": { "type": "string", "description": "The UID of the user being reviewed." },
+            "reviewerRole": { "type": "string", "enum": ["artist", "venue"] },
             "rating": { "type": "number", "minimum": 1, "maximum": 5 },
             "reviewText": { "type": "string" },
             "createdAt": { "type": "string", "format": "date-time" }
         },
-        "required": ["id", "bookingRequestId", "artistProfileId", "venueProfileId", "rating", "createdAt"]
+        "required": ["id", "bookingRequestId", "reviewerId", "revieweeId", "reviewerRole", "rating", "createdAt"]
     }
   },
   "auth": {
@@ -594,7 +595,7 @@
           "schema": {
             "$ref": "#/backend/entities/Review"
           },
-          "description": "Stores reviews of artists by venues. Publicly readable but only writeable by the venue who created it.",
+          "description": "Stores reviews of artists by venues, or venues by artists. Publicly readable but only writeable by a participant of the booking.",
           "params": [
             {
               "name": "reviewId",
