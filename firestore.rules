@@ -104,12 +104,15 @@ service cloud.firestore {
     }
     
     /**
-     * Checks if there are any admins in the system.
-     * Used for the initial admin registration.
+     * Checks if the incoming query is specifically for the initial admin check.
+     * This is a very narrow rule to allow the UI to redirect to the admin registration page.
      */
-     function noAdminsExist() {
-       return !exists(/databases/$(database)/documents/users?isAdmin=true);
-     }
+    function isCheckingForFirstAdmin() {
+       return request.query.limit == 1 
+              && request.query.where[0][0] == 'isAdmin' 
+              && request.query.where[0][1] == '==' 
+              && request.query.where[0][2] == true;
+    }
 
 
     //-------------------------------------------------------------------------
@@ -125,8 +128,7 @@ service cloud.firestore {
      */
     match /users/{userId} {
       allow get: if isOwner(userId) || isAdmin();
-      // Allow listing users if admin OR if checking for first admin
-      allow list: if isAdmin() || (request.query.limit == 1 && request.query.where[0][1] == 'isAdmin');
+      allow list: if isAdmin() || isCheckingForFirstAdmin();
       allow create: if isOwner(userId) && request.resource.data.id == userId;
       allow update: if isOwner(userId) || isAdmin();
       allow delete: if false;
