@@ -117,11 +117,9 @@ service cloud.firestore {
      */
     match /users/{userId} {
       allow get: if isOwner(userId);
-      // WARNING: This is insecure for production. It allows any authenticated user to list all other users.
-      // This is a temporary measure to enable admin functionality.
-      // A proper implementation should use custom claims to identify admins.
-      allow list, update: if isAdmin();
+      allow list: if isAdmin();
       allow create: if isOwner(userId) && request.resource.data.id == userId;
+      allow update: if isOwner(userId) || isAdmin();
       allow delete: if false;
 
       /**
@@ -145,7 +143,7 @@ service cloud.firestore {
      */
     match /venue_profiles/{venueProfileId} {
       allow get, list: if true;
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid && request.resource.data.id == request.auth.uid;
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
       allow update: if isOwnerOfExistingDoc(resource.data.userId) && request.resource.data.userId == resource.data.userId || isAdmin();
       allow delete: if isOwnerOfExistingDoc(resource.data.userId) || isAdmin();
 
@@ -184,7 +182,7 @@ service cloud.firestore {
      */
     match /artist_profiles/{artistProfileId} {
       allow get, list: if true;
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid && request.resource.data.id == request.auth.uid;
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
       allow update: if (isOwnerOfExistingDoc(resource.data.userId) && request.resource.data.userId == resource.data.userId) || isAdmin();
       allow delete: if isOwnerOfExistingDoc(resource.data.userId) || isAdmin();
 
