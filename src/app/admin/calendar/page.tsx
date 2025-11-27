@@ -23,38 +23,31 @@ export default function AdminCalendarPage() {
   const firestore = useFirestore();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 
-  // // 1. Fetch confirmed bookings for the event calendar
-  // const confirmedBookingsQuery = useMemoFirebase(() => {
-  //   if (!firestore) return null;
-  //   return query(
-  //     collectionGroup(firestore, 'booking_requests'),
-  //     where('status', '==', 'confirmed')
-  //   );
-  // }, [firestore]);
+  // 1. Fetch confirmed bookings for the event calendar
+  const confirmedBookingsQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(
+      collectionGroup(firestore, 'booking_requests'),
+      where('status', '==', 'confirmed')
+    );
+  }, [firestore]);
 
-  // const { data: bookings, isLoading: bookingsLoading } =
-  //   useCollection<BookingRequest>(confirmedBookingsQuery);
-  const bookings: BookingRequest[] = [];
-  const bookingsLoading = true;
+  const { data: bookings, isLoading: bookingsLoading } =
+    useCollection<BookingRequest>(confirmedBookingsQuery);
 
-  // // 2. Fetch all artist profiles
-  // const artistsQuery = useMemoFirebase(() => {
-  //   if (!firestore) return null;
-  //   return query(collection(firestore, 'artist_profiles'));
-  // }, [firestore]);
-  // const { data: artists, isLoading: artistsLoading } = useCollection<ArtistProfile>(artistsQuery);
-  const artists: ArtistProfile[] = [];
-  const artistsLoading = true;
+  // 2. Fetch all artist profiles
+  const artistsQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'artist_profiles'));
+  }, [firestore]);
+  const { data: artists, isLoading: artistsLoading } = useCollection<ArtistProfile>(artistsQuery);
 
-
-  // // 3. Fetch all availability data
-  // const availabilityQuery = useMemoFirebase(() => {
-  //   if (!firestore) return null;
-  //   return query(collectionGroup(firestore, 'availability'));
-  // }, [firestore]);
-  // const { data: allAvailability, isLoading: availabilityLoading } = useCollection<ArtistAvailability>(availabilityQuery);
-  const allAvailability: ArtistAvailability[] = [];
-  const availabilityLoading = true;
+  // 3. Fetch all availability data
+  const availabilityQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collectionGroup(firestore, 'availability'));
+  }, [firestore]);
+  const { data: allAvailability, isLoading: availabilityLoading } = useCollection<ArtistAvailability>(availabilityQuery);
 
 
   const calendarEvents = useMemo(() => {
@@ -78,9 +71,19 @@ export default function AdminCalendarPage() {
     const unavailableArtistIds = new Set(unavailableForDate.map(a => a.artistProfileId));
 
     const availableArtists = artists.filter(artist => !unavailableArtistIds.has(artist.id));
-    const unavailableArtists = artists.filter(artist => unavailableArtistIds.has(artist.id));
+    
+    const unavailableArtistsWithDetails = unavailableForDate.map(avail => {
+      const artist = artists.find(a => a.id === avail.artistProfileId);
+      return {
+        ...artist,
+        id: artist?.id || avail.artistProfileId,
+        stageName: artist?.stageName || 'Unknown Artist',
+        artistProfilePictureUrl: artist?.artistProfilePictureUrl,
+        unavailabilityReason: avail.isAllDay ? 'All Day' : `${avail.unavailableStartTime} - ${avail.unavailableEndTime}`
+      }
+    });
 
-    return { available: availableArtists, unavailable: unavailableArtists };
+    return { available: availableArtists, unavailable: unavailableArtistsWithDetails };
 
   }, [artists, allAvailability, selectedDate]);
 
@@ -96,13 +99,13 @@ export default function AdminCalendarPage() {
         <CardHeader>
           <CardTitle>All Confirmed Bookings</CardTitle>
           <CardDescription>
-            A master calendar view of all confirmed events on the platform. (Admin access required)
+            A master calendar view of all confirmed events on the platform.
           </CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
             <div className="flex justify-center items-center h-96">
-              <p className='text-muted-foreground'>Insufficient permissions to view calendar.</p>
+              <Loader2 className="mx-auto h-8 w-8 animate-spin text-muted-foreground" />
             </div>
           ) : (
             <EventCalendar events={calendarEvents} />
@@ -114,7 +117,7 @@ export default function AdminCalendarPage() {
         <CardHeader>
           <CardTitle>Artist Availability Checker</CardTitle>
           <CardDescription>
-            Select a date to see which artists are available or unavailable. (Admin access required)
+            Select a date to see which artists are available or unavailable.
           </CardDescription>
         </CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -130,16 +133,19 @@ export default function AdminCalendarPage() {
                 <div>
                     <h3 className="font-semibold mb-2">Unavailable Artists ({unavailable.length})</h3>
                     <ScrollArea className="h-72 rounded-md border p-2">
-                        {isLoading ? <p className="text-sm text-muted-foreground text-center pt-4">Insufficient permissions.</p> :
+                        {isLoading ? <div className="flex justify-center items-center h-full"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div> :
                          unavailable.length > 0 ? (
                             <ul className="space-y-2">
                                 {unavailable.map(artist => (
-                                    <li key={artist.id} className="flex items-center gap-3">
-                                        <Avatar className="h-8 w-8">
-                                            <AvatarImage src={artist.artistProfilePictureUrl} />
-                                            <AvatarFallback>{artist.stageName.charAt(0)}</AvatarFallback>
-                                        </Avatar>
-                                        <span className="text-sm font-medium">{artist.stageName}</span>
+                                    <li key={artist.id} className="flex items-center justify-between gap-3 p-2 rounded-md bg-muted/50">
+                                        <div className="flex items-center gap-3">
+                                            <Avatar className="h-8 w-8">
+                                                <AvatarImage src={artist.artistProfilePictureUrl} />
+                                                <AvatarFallback>{artist.stageName.charAt(0)}</AvatarFallback>
+                                            </Avatar>
+                                            <span className="text-sm font-medium">{artist.stageName}</span>
+                                        </div>
+                                        <Badge variant="secondary">{artist.unavailabilityReason}</Badge>
                                     </li>
                                 ))}
                             </ul>
@@ -151,11 +157,11 @@ export default function AdminCalendarPage() {
                  <div>
                     <h3 className="font-semibold mb-2">Available Artists ({available.length})</h3>
                      <ScrollArea className="h-72 rounded-md border p-2">
-                        {isLoading ? <p className="text-sm text-muted-foreground text-center pt-4">Insufficient permissions.</p> :
+                        {isLoading ? <div className="flex justify-center items-center h-full"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div> :
                          available.length > 0 ? (
                              <ul className="space-y-2">
                                 {available.map(artist => (
-                                    <li key={artist.id} className="flex items-center gap-3">
+                                    <li key={artist.id} className="flex items-center gap-3 p-2 rounded-md">
                                         <Avatar className="h-8 w-8">
                                             <AvatarImage src={artist.artistProfilePictureUrl} />
                                             <AvatarFallback>{artist.stageName.charAt(0)}</AvatarFallback>
@@ -165,7 +171,7 @@ export default function AdminCalendarPage() {
                                 ))}
                             </ul>
                         ) : (
-                            <p className="text-sm text-muted-foreground text-center pt-4">No artists found.</p>
+                            <p className="text-sm text-muted-foreground text-center pt-4">No artists available.</p>
                         )}
                     </ScrollArea>
                 </div>

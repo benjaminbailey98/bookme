@@ -166,7 +166,7 @@ service cloud.firestore {
     /**
      * @description Secures collection group queries for 'booking_requests'.
      * @path /{path=**}/booking_requests/{bookingRequestId}
-     * @allow (list) Any signed-in user can list all bookings. This is suitable for the development/admin context.
+     * @allow (list) An admin can list all bookings to get an overview.
      * @principle This rule ensures that collection group queries for bookings are securely filtered.
      */
     match /{path=**}/booking_requests/{bookingRequestId} {
@@ -198,10 +198,10 @@ service cloud.firestore {
       }
     }
     
-     /**
+    /**
      * @description Secures collection group queries for 'availability'.
      * @path /{path=**}/availability/{availabilityId}
-     * @allow (list) Any signed-in user can list all availability. Necessary for admin calendar.
+     * @allow (list) An admin can list all artist availability.
      * @principle This rule is essential for the master calendar's availability checker.
      */
     match /{path=**}/availability/{availabilityId} {
