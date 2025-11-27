@@ -1,7 +1,7 @@
 
 'use client';
 
-import { collection, query } from 'firebase/firestore';
+import { collectionGroup, query } from 'firebase/firestore';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import type { BookingRequest, ArtistProfile } from '@/lib/types';
 import { Button } from '@/components/ui/button';
@@ -24,43 +24,48 @@ import { Badge } from '@/components/ui/badge';
 import { Loader2, PlusCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { useMemo } from 'react';
+import { collection } from 'firebase/firestore';
 
 export default function AdminBookingsPage() {
   const firestore = useFirestore();
 
-  // This query is being removed as it's insecure and causing errors.
-  // A proper implementation would require fetching bookings for each venue individually.
-  const { data: bookings, isLoading: bookingsLoading } = { data: [], isLoading: false };
-  
+  const bookingsQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collectionGroup(firestore, 'booking_requests'));
+  }, [firestore]);
+
+  const { data: bookings, isLoading: bookingsLoading } =
+    useCollection<BookingRequest>(bookingsQuery);
+
   const artistsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
     return query(collection(firestore, 'artist_profiles'));
   }, [firestore]);
 
-  const { data: artists, isLoading: artistsLoading } = useCollection<ArtistProfile>(artistsQuery);
-  
+  const { data: artists, isLoading: artistsLoading } =
+    useCollection<ArtistProfile>(artistsQuery);
+
   const artistMap = useMemo(() => {
     if (!artists) return new Map();
-    return new Map(artists.map(artist => [artist.id, artist.stageName]));
+    return new Map(artists.map((artist) => [artist.id, artist.stageName]));
   }, [artists]);
 
   const isLoading = bookingsLoading || artistsLoading;
 
   const getStatusVariant = (status?: string) => {
     switch (status) {
-        case 'confirmed':
-            return 'default';
-        case 'pending':
-            return 'secondary';
-        case 'declined':
-            return 'destructive';
-        case 'completed':
-            return 'outline';
-        default:
-            return 'outline';
+      case 'confirmed':
+        return 'default';
+      case 'pending':
+        return 'secondary';
+      case 'declined':
+        return 'destructive';
+      case 'completed':
+        return 'outline';
+      default:
+        return 'outline';
     }
-  }
-
+  };
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
@@ -78,7 +83,7 @@ export default function AdminBookingsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-           <Table>
+          <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Event Date</TableHead>
@@ -99,16 +104,25 @@ export default function AdminBookingsPage() {
               {!isLoading && bookings && bookings.length > 0 ? (
                 bookings.map((booking) => (
                   <TableRow key={booking.id}>
-                    <TableCell className="font-medium">{booking.eventDate.toDate ? format(booking.eventDate.toDate(), 'PPP') : 'Invalid Date'}</TableCell>
+                    <TableCell className="font-medium">
+                      {booking.eventDate.toDate
+                        ? format(booking.eventDate.toDate(), 'PPP')
+                        : 'Invalid Date'}
+                    </TableCell>
                     <TableCell>{booking.venueName}</TableCell>
-                    <TableCell>{artistMap.get(booking.artistProfileId) || booking.artistProfileId}</TableCell>
+                    <TableCell>
+                      {artistMap.get(booking.artistProfileId) ||
+                        booking.artistProfileId}
+                    </TableCell>
                     <TableCell>
                       <Badge variant={getStatusVariant(booking.status)}>
                         {booking.status || 'Pending'}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
-                       <Button variant="outline" size="sm">View Details</Button>
+                      <Button variant="outline" size="sm">
+                        View Details
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))

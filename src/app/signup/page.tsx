@@ -25,7 +25,7 @@ import * as z from 'zod';
 import { PasswordInput } from '@/components/ui/password-input';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth, useFirestore } from '@/firebase';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { doc, setDoc, writeBatch } from 'firebase/firestore';
@@ -77,6 +77,9 @@ function VenueRegistrationForm() {
         data.password
       );
       const user = userCredential.user;
+      
+      // Also update the user's auth profile display name
+      await updateProfile(user, { displayName: data.companyName });
 
       const batch = writeBatch(firestore);
 
@@ -93,7 +96,7 @@ function VenueRegistrationForm() {
 
       // Create venue profile document
       const venueProfileRef = doc(firestore, 'venue_profiles', user.uid);
-      const newVenueProfile: Omit<VenueProfile, 'id' | 'userId' | 'companyEmail'> & Partial<VenueProfile> = {
+      const newVenueProfile: Omit<VenueProfile, 'id' | 'userId' | 'companyEmail' | 'companyLogoUrl'> = {
           companyName: data.companyName,
           companyPhone: data.phone,
           // Prefill with some data, but user needs to complete it
@@ -238,6 +241,9 @@ function ArtistRegistrationForm() {
         data.password
       );
       const user = userCredential.user;
+
+      // Also update the user's auth profile display name
+      await updateProfile(user, { displayName: data.stageName });
       
       const batch = writeBatch(firestore);
 
@@ -254,18 +260,18 @@ function ArtistRegistrationForm() {
 
       // 2. Create the initial artist profile document
       const artistProfileRef = doc(firestore, 'artist_profiles', user.uid);
-      const newArtistProfile: Omit<ArtistProfile, 'id' | 'userId'> & Partial<ArtistProfile> = {
+      const newArtistProfile: Omit<ArtistProfile, 'id' | 'userId' | 'realName' | 'shortBio'> = {
           stageName: data.stageName,
-          realName: '', // User will fill this in their profile
           personalEmail: user.email!,
           personalPhone: data.phone,
-          shortBio: '', // User will fill this in
       };
 
       batch.set(artistProfileRef, {
         ...newArtistProfile,
         id: user.uid,
         userId: user.uid,
+        realName: '', // User will fill this in their profile
+        shortBio: '', // User will fill this in
       });
 
       await batch.commit();
@@ -428,5 +434,3 @@ export default function SignupPage() {
     </div>
   );
 }
-
-    
