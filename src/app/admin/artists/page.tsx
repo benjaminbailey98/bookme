@@ -31,6 +31,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { ArtistForm } from './artist-form';
+import Link from 'next/link';
 
 export default function AdminArtistsPage() {
   const firestore = useFirestore();
@@ -100,8 +101,10 @@ export default function AdminArtistsPage() {
                     <TableCell>{artist.realName}</TableCell>
                     <TableCell>{artist.personalEmail}</TableCell>
                     <TableCell className="text-right">
-                      <Button variant="outline" size="sm">
-                        View Profile
+                      <Button asChild variant="outline" size="sm">
+                        <Link href={`/artists/portal/profile?artistId=${artist.id}`} target="_blank">
+                          View Profile
+                        </Link>
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -125,3 +128,5 @@ export default function AdminArtistsPage() {
     </div>
   );
 }
+
+    

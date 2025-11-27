@@ -33,6 +33,16 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { ArtistProfile } from '@/lib/types';
 import { useEffect } from 'react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+  DialogClose,
+} from '@/components/ui/dialog';
 
 const socialLinkSchema = z.object({
   platform: z.string(),
@@ -55,6 +65,8 @@ const profileFormSchema = z.object({
   managementContactPerson: z.string().optional(),
   managementEmail: z.string().email().optional().or(z.literal('')),
   managementPhone: z.string().optional(),
+  artistProfilePictureUrl: z.string().url('Please enter a valid URL.').optional().or(z.literal('')),
+  artistPerformingVideoUrl: z.string().url('Please enter a valid URL.').optional().or(z.literal('')),
   newPassword: z.string().min(8, 'Password must be at least 8 characters.').optional().or(z.literal('')),
   confirmPassword: z.string().optional().or(z.literal('')),
 }).refine(data => data.newPassword === data.confirmPassword, {
@@ -95,6 +107,8 @@ export default function ArtistProfilePage() {
       managementContactPerson: '',
       managementEmail: '',
       managementPhone: '',
+      artistProfilePictureUrl: '',
+      artistPerformingVideoUrl: '',
       newPassword: '',
       confirmPassword: '',
     },
@@ -392,39 +406,67 @@ export default function ArtistProfilePage() {
             </div>
             {/* Right Column */}
             <div className="space-y-8">
-              <Card>
+            <Card>
                 <CardHeader>
                   <CardTitle>Profile Picture</CardTitle>
                 </CardHeader>
                 <CardContent className="flex flex-col items-center gap-4">
                   <Avatar className="w-40 h-40">
-                    <AvatarImage src={profile?.artistProfilePictureUrl || "https://picsum.photos/seed/artist-pfp/400/400"} alt="Artist Profile Picture"/>
+                    <AvatarImage src={form.watch('artistProfilePictureUrl') || "https://picsum.photos/seed/artist-pfp/400/400"} alt="Artist Profile Picture"/>
                     <AvatarFallback>{profile?.stageName?.charAt(0) || 'A'}</AvatarFallback>
                   </Avatar>
-                  <Button type="button" variant="outline">
-                    <UploadCloud className="mr-2 h-4 w-4" />
-                    Upload Photo
-                  </Button>
-                  <p className="text-xs text-muted-foreground">
-                    PNG, JPG, GIF up to 10MB.
-                  </p>
+                  <FormField
+                    control={form.control}
+                    name="artistProfilePictureUrl"
+                    render={({ field }) => (
+                      <FormItem className="w-full">
+                        <FormLabel className="sr-only">Profile Picture URL</FormLabel>
+                        <FormControl>
+                           <Input placeholder="https://example.com/image.png" {...field} />
+                        </FormControl>
+                         <FormDescription className="text-xs text-center">Paste an image URL to update.</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </CardContent>
               </Card>
               <Card>
                 <CardHeader>
-                  <CardTitle>Video</CardTitle>
+                  <CardTitle>Performance Video</CardTitle>
                 </CardHeader>
-                <CardContent className="flex flex-col items-center gap-4">
-                    <div className="w-full aspect-video bg-muted rounded-md flex items-center justify-center">
-                        <p className="text-muted-foreground">Video Preview</p>
+                 <CardContent className="flex flex-col items-center gap-4">
+                    <div className="w-full aspect-video bg-muted rounded-md flex items-center justify-center overflow-hidden">
+                        {form.watch('artistPerformingVideoUrl') ? (
+                             <iframe
+                                width="100%"
+                                height="100%"
+                                src={form.watch('artistPerformingVideoUrl')}
+                                title="YouTube video player"
+                                frameBorder="0"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                allowFullScreen
+                            ></iframe>
+                        ) : (
+                            <p className="text-sm text-muted-foreground">Video Preview</p>
+                        )}
                     </div>
-                  <Button type="button" variant="outline">
-                    <UploadCloud className="mr-2 h-4 w-4" />
-                    Upload Video
-                  </Button>
-                  <p className="text-xs text-muted-foreground">
-                    MP4, 2 minutes max.
-                  </p>
+                    <FormField
+                        control={form.control}
+                        name="artistPerformingVideoUrl"
+                        render={({ field }) => (
+                        <FormItem className="w-full">
+                            <FormLabel className="sr-only">YouTube Embed URL</FormLabel>
+                            <FormControl>
+                            <Input placeholder="YouTube embed URL..." {...field} />
+                            </FormControl>
+                            <FormDescription className="text-xs text-center">
+                                Paste a YouTube embed URL.
+                            </FormDescription>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
                 </CardContent>
               </Card>
               <Card>

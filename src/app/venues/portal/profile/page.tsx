@@ -55,6 +55,7 @@ const profileFormSchema = z.object({
   contactName: z.string().min(1, 'Contact name is required.'),
   contactEmail: z.string().email('Please enter a valid email.'),
   contactPhone: z.string().min(1, 'Contact phone is required.'),
+  companyLogoUrl: z.string().url('Please enter a valid URL.').optional().or(z.literal('')),
 });
 
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
@@ -84,6 +85,7 @@ export default function VenueProfilePage() {
         contactName: '',
         contactEmail: '',
         contactPhone: '',
+        companyLogoUrl: '',
     },
   });
 
@@ -295,14 +297,23 @@ export default function VenueProfilePage() {
                     </CardHeader>
                     <CardContent className="flex flex-col items-center gap-4">
                         <Avatar className="w-40 h-40">
-                            <AvatarImage src={profile?.companyLogoUrl || "https://picsum.photos/seed/venue-logo/400/400"} alt="Company Logo" />
+                            <AvatarImage src={form.watch('companyLogoUrl') || "https://picsum.photos/seed/venue-logo/400/400"} alt="Company Logo" />
                             <AvatarFallback>{profile?.companyName?.charAt(0) || 'V'}</AvatarFallback>
                         </Avatar>
-                        <Button type="button" variant="outline">
-                            <UploadCloud className="mr-2 h-4 w-4" />
-                            Upload Logo
-                        </Button>
-                        <p className="text-xs text-muted-foreground">PNG, JPG, GIF up to 10MB.</p>
+                         <FormField
+                            control={form.control}
+                            name="companyLogoUrl"
+                            render={({ field }) => (
+                            <FormItem className="w-full">
+                                <FormLabel className="sr-only">Company Logo URL</FormLabel>
+                                <FormControl>
+                                <Input placeholder="https://example.com/logo.png" {...field} />
+                                </FormControl>
+                                <FormDescription className="text-xs text-center">Paste an image URL to update.</FormDescription>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
                     </CardContent>
                 </Card>
 
@@ -354,3 +365,5 @@ export default function VenueProfilePage() {
     </div>
   );
 }
+
+    

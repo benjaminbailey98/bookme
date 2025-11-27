@@ -21,6 +21,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Loader2, PlusCircle } from 'lucide-react';
+import Link from 'next/link';
 
 export default function AdminVenuesPage() {
   const firestore = useFirestore();
@@ -72,7 +73,11 @@ export default function AdminVenuesPage() {
                     <TableCell>{venue.contactName}</TableCell>
                     <TableCell>{venue.companyEmail}</TableCell>
                     <TableCell className="text-right">
-                       <Button variant="outline" size="sm">View Profile</Button>
+                       <Button asChild variant="outline" size="sm">
+                         <Link href={`/venues/portal/profile?venueId=${venue.id}`} target="_blank">
+                            View Profile
+                         </Link>
+                       </Button>
                     </TableCell>
                   </TableRow>
                 ))
@@ -95,3 +100,5 @@ export default function AdminVenuesPage() {
     </div>
   );
 }
+
+    
