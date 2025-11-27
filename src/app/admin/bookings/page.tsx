@@ -51,7 +51,11 @@ export default function AdminBookingsPage() {
   const bookingsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
     // This collection group query requires a specific security rule to allow admins to list all bookings.
-    return query(collectionGroup(firestore, 'booking_requests'));
+    // By adding a where clause, we make the query more specific and manageable for security rules.
+    return query(
+      collectionGroup(firestore, 'booking_requests'),
+      where('status', '!=', 'draft')
+    );
   }, [firestore]);
 
   const { data: bookings, isLoading: bookingsLoading } =
