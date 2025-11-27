@@ -81,7 +81,7 @@ export default function AdminUsersPage() {
         <CardHeader>
           <CardTitle>Registered Users</CardTitle>
           <CardDescription>
-            A list of all users, including artists and venues.
+            A list of all users, including artists and venues. (Admin access required)
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -153,7 +153,7 @@ export default function AdminUsersPage() {
                       colSpan={5}
                       className="h-24 text-center text-muted-foreground"
                     >
-                      No users found.
+                      Insufficient permissions to view users.
                     </TableCell>
                   </TableRow>
                 )

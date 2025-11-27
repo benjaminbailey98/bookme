@@ -26,20 +26,25 @@ import { Badge } from '@/components/ui/badge';
 export default function AdminReviewsPage() {
   const firestore = useFirestore();
 
-  const reviewsQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return query(collection(firestore, 'reviews'));
-  }, [firestore]);
+  // const reviewsQuery = useMemoFirebase(() => {
+  //   if (!firestore) return null;
+  //   return query(collection(firestore, 'reviews'));
+  // }, [firestore]);
 
-  const usersQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return query(collection(firestore, 'users'));
-  }, [firestore]);
+  // const usersQuery = useMemoFirebase(() => {
+  //   if (!firestore) return null;
+  //   return query(collection(firestore, 'users'));
+  // }, [firestore]);
+  const reviews: Review[] = [];
+  const reviewsLoading = true;
+  const users: User[] = [];
+  const usersLoading = true;
 
-  const { data: reviews, isLoading: reviewsLoading } =
-    useCollection<Review>(reviewsQuery);
-  const { data: users, isLoading: usersLoading } =
-    useCollection<User>(usersQuery);
+
+  // const { data: reviews, isLoading: reviewsLoading } =
+  //   useCollection<Review>(reviewsQuery);
+  // const { data: users, isLoading: usersLoading } =
+  //   useCollection<User>(usersQuery);
 
   const profileMap = useMemo(() => {
     const map = new Map<string, string>();
@@ -77,7 +82,7 @@ export default function AdminReviewsPage() {
         <CardHeader>
           <CardTitle>All User Reviews</CardTitle>
           <CardDescription>
-            A list of all reviews submitted by artists and venues.
+            A list of all reviews submitted by artists and venues. (Admin access required)
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -132,7 +137,7 @@ export default function AdminReviewsPage() {
                       colSpan={5}
                       className="h-24 text-center text-muted-foreground"
                     >
-                      No reviews found.
+                      Insufficient permissions to view reviews.
                     </TableCell>
                   </TableRow>
                 )

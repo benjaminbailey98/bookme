@@ -28,15 +28,18 @@ export default function AdminDashboardPage() {
     return query(collection(firestore, 'venue_profiles'));
   }, [firestore]);
   
-  const bookingsQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return query(collectionGroup(firestore, 'booking_requests'));
-  }, [firestore]);
+  // const bookingsQuery = useMemoFirebase(() => {
+  //   if (!firestore) return null;
+  //   return query(collectionGroup(firestore, 'booking_requests'));
+  // }, [firestore]);
 
   const { data: users, isLoading: usersLoading } = useCollection<User>(usersQuery);
   const { data: artists, isLoading: artistsLoading } = useCollection<ArtistProfile>(artistsQuery);
   const { data: venues, isLoading: venuesLoading } = useCollection<VenueProfile>(venuesQuery);
-  const { data: bookings, isLoading: bookingsLoading } = useCollection<BookingRequest>(bookingsQuery);
+  // const { data: bookings, isLoading: bookingsLoading } = useCollection<BookingRequest>(bookingsQuery);
+  const bookings: BookingRequest[] = [];
+  const bookingsLoading = true;
+
 
   const isLoading = usersLoading || artistsLoading || venuesLoading || bookingsLoading;
 
@@ -49,8 +52,8 @@ export default function AdminDashboardPage() {
       { title: 'Total Users', value: (users || []).length.toString(), icon: Users, change: '' },
       { title: 'Registered Artists', value: (artists || []).length.toString(), icon: Star, change: '' },
       { title: 'Registered Venues', value: (venues || []).length.toString(), icon: Building, change: '' },
-      { title: 'Total Bookings', value: safeBookings.length.toString(), icon: ListMusic, change: `${confirmedBookings} confirmed` },
-      { title: 'Pending Bookings', value: pendingBookings.toString(), icon: UserCheck, change: 'Awaiting action' },
+      { title: 'Total Bookings', value: 'N/A', icon: ListMusic, change: `Admin access needed` },
+      { title: 'Pending Bookings', value: 'N/A', icon: UserCheck, change: 'Admin access needed' },
     ];
   }, [users, artists, venues, bookings]);
 

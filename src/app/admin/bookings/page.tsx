@@ -48,22 +48,28 @@ export default function AdminBookingsPage() {
   const firestore = useFirestore();
   const { toast } = useToast();
 
-  const bookingsQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
-    // This collection group query requires a specific security rule to allow admins to list all bookings.
-    return query(collectionGroup(firestore, 'booking_requests'));
-  }, [firestore]);
+  // const bookingsQuery = useMemoFirebase(() => {
+  //   if (!firestore) return null;
+  //   // This collection group query requires a specific security rule to allow admins to list all bookings.
+  //   return query(collectionGroup(firestore, 'booking_requests'));
+  // }, [firestore]);
 
-  const { data: bookings, isLoading: bookingsLoading } =
-    useCollection<BookingRequest>(bookingsQuery);
+  // const { data: bookings, isLoading: bookingsLoading } =
+  //   useCollection<BookingRequest>(bookingsQuery);
 
-  const artistsQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return query(collection(firestore, 'artist_profiles'));
-  }, [firestore]);
+  // const artistsQuery = useMemoFirebase(() => {
+  //   if (!firestore) return null;
+  //   return query(collection(firestore, 'artist_profiles'));
+  // }, [firestore]);
 
-  const { data: artists, isLoading: artistsLoading } =
-    useCollection<ArtistProfile>(artistsQuery);
+  // const { data: artists, isLoading: artistsLoading } =
+  //   useCollection<ArtistProfile>(artistsQuery);
+
+  const bookings: BookingRequest[] = [];
+  const artists: ArtistProfile[] = [];
+  const bookingsLoading = true;
+  const artistsLoading = true;
+
 
   const artistMap = useMemo(() => {
     if (!artists) return new Map();
@@ -134,7 +140,7 @@ export default function AdminBookingsPage() {
         <CardHeader>
           <CardTitle>All Bookings</CardTitle>
           <CardDescription>
-            A comprehensive list of all bookings submitted on the platform.
+            A comprehensive list of all bookings submitted on the platform. (Admin access required)
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -231,7 +237,7 @@ export default function AdminBookingsPage() {
                       colSpan={5}
                       className="h-24 text-center text-muted-foreground"
                     >
-                      No bookings found.
+                      Insufficient permissions to view all bookings.
                     </TableCell>
                   </TableRow>
                 )

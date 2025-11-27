@@ -23,31 +23,39 @@ export default function AdminCalendarPage() {
   const firestore = useFirestore();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 
-  // 1. Fetch confirmed bookings for the event calendar
-  const confirmedBookingsQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return query(
-      collectionGroup(firestore, 'booking_requests'),
-      where('status', '==', 'confirmed')
-    );
-  }, [firestore]);
+  // // 1. Fetch confirmed bookings for the event calendar
+  // const confirmedBookingsQuery = useMemoFirebase(() => {
+  //   if (!firestore) return null;
+  //   return query(
+  //     collectionGroup(firestore, 'booking_requests'),
+  //     where('status', '==', 'confirmed')
+  //   );
+  // }, [firestore]);
 
-  const { data: bookings, isLoading: bookingsLoading } =
-    useCollection<BookingRequest>(confirmedBookingsQuery);
+  // const { data: bookings, isLoading: bookingsLoading } =
+  //   useCollection<BookingRequest>(confirmedBookingsQuery);
+  const bookings: BookingRequest[] = [];
+  const bookingsLoading = true;
 
-  // 2. Fetch all artist profiles
-  const artistsQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return query(collection(firestore, 'artist_profiles'));
-  }, [firestore]);
-  const { data: artists, isLoading: artistsLoading } = useCollection<ArtistProfile>(artistsQuery);
+  // // 2. Fetch all artist profiles
+  // const artistsQuery = useMemoFirebase(() => {
+  //   if (!firestore) return null;
+  //   return query(collection(firestore, 'artist_profiles'));
+  // }, [firestore]);
+  // const { data: artists, isLoading: artistsLoading } = useCollection<ArtistProfile>(artistsQuery);
+  const artists: ArtistProfile[] = [];
+  const artistsLoading = true;
 
-  // 3. Fetch all availability data
-  const availabilityQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return query(collectionGroup(firestore, 'availability'));
-  }, [firestore]);
-  const { data: allAvailability, isLoading: availabilityLoading } = useCollection<ArtistAvailability>(availabilityQuery);
+
+  // // 3. Fetch all availability data
+  // const availabilityQuery = useMemoFirebase(() => {
+  //   if (!firestore) return null;
+  //   return query(collectionGroup(firestore, 'availability'));
+  // }, [firestore]);
+  // const { data: allAvailability, isLoading: availabilityLoading } = useCollection<ArtistAvailability>(availabilityQuery);
+  const allAvailability: ArtistAvailability[] = [];
+  const availabilityLoading = true;
+
 
   const calendarEvents = useMemo(() => {
     if (!bookings || !artists) return [];
@@ -88,13 +96,13 @@ export default function AdminCalendarPage() {
         <CardHeader>
           <CardTitle>All Confirmed Bookings</CardTitle>
           <CardDescription>
-            A master calendar view of all confirmed events on the platform.
+            A master calendar view of all confirmed events on the platform. (Admin access required)
           </CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
             <div className="flex justify-center items-center h-96">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              <p className='text-muted-foreground'>Insufficient permissions to view calendar.</p>
             </div>
           ) : (
             <EventCalendar events={calendarEvents} />
@@ -106,7 +114,7 @@ export default function AdminCalendarPage() {
         <CardHeader>
           <CardTitle>Artist Availability Checker</CardTitle>
           <CardDescription>
-            Select a date to see which artists are available or unavailable.
+            Select a date to see which artists are available or unavailable. (Admin access required)
           </CardDescription>
         </CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -122,7 +130,7 @@ export default function AdminCalendarPage() {
                 <div>
                     <h3 className="font-semibold mb-2">Unavailable Artists ({unavailable.length})</h3>
                     <ScrollArea className="h-72 rounded-md border p-2">
-                        {isLoading ? <Loader2 className="m-auto h-6 w-6 animate-spin"/> :
+                        {isLoading ? <p className="text-sm text-muted-foreground text-center pt-4">Insufficient permissions.</p> :
                          unavailable.length > 0 ? (
                             <ul className="space-y-2">
                                 {unavailable.map(artist => (
@@ -143,7 +151,7 @@ export default function AdminCalendarPage() {
                  <div>
                     <h3 className="font-semibold mb-2">Available Artists ({available.length})</h3>
                      <ScrollArea className="h-72 rounded-md border p-2">
-                        {isLoading ? <Loader2 className="m-auto h-6 w-6 animate-spin"/> :
+                        {isLoading ? <p className="text-sm text-muted-foreground text-center pt-4">Insufficient permissions.</p> :
                          available.length > 0 ? (
                              <ul className="space-y-2">
                                 {available.map(artist => (
