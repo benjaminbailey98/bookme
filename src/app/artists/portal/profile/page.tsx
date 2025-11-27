@@ -1,4 +1,3 @@
-
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -25,24 +24,21 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { UploadCloud, PlusCircle, Trash2, Loader2 } from 'lucide-react';
+import { UploadCloud, PlusCircle, Trash2, Loader2, Edit } from 'lucide-react';
 import { PasswordInput } from '@/components/ui/password-input';
 import { useFirestore, useUser, useDoc, useMemoFirebase } from '@/firebase';
 import { doc, setDoc } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { ArtistProfile } from '@/lib/types';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
   DialogTrigger,
-  DialogFooter,
-  DialogClose,
 } from '@/components/ui/dialog';
+import { ImageCropDialog } from '@/components/image-crop-dialog';
+
 
 const socialLinkSchema = z.object({
   platform: z.string(),
@@ -81,6 +77,7 @@ export default function ArtistProfilePage() {
   const { toast } = useToast();
   const firestore = useFirestore();
   const { user, isUserLoading } = useUser();
+  const [isCropDialogOpen, setIsCropDialogOpen] = useState(false);
   
   const artistProfileRef = useMemoFirebase(() => {
     if (!firestore || !user) return null;
@@ -120,6 +117,7 @@ export default function ArtistProfilePage() {
     }
      if (user && !profile) {
       form.setValue('personalEmail', user.email || '');
+      form.setValue('stageName', user.displayName || '');
     }
   }, [profile, user, form]);
 
@@ -169,6 +167,13 @@ export default function ArtistProfilePage() {
     if (newPassword) {
       console.log('Password change requested. Implement this securely.');
     }
+  }
+
+  const handleCroppedImage = (image: string | null) => {
+    if (image) {
+      form.setValue('artistProfilePictureUrl', image, { shouldDirty: true, shouldValidate: true });
+    }
+    setIsCropDialogOpen(false);
   }
 
   if (isUserLoading || isProfileLoading) {
@@ -411,24 +416,23 @@ export default function ArtistProfilePage() {
                   <CardTitle>Profile Picture</CardTitle>
                 </CardHeader>
                 <CardContent className="flex flex-col items-center gap-4">
-                  <Avatar className="w-40 h-40">
-                    <AvatarImage src={form.watch('artistProfilePictureUrl') || "https://picsum.photos/seed/artist-pfp/400/400"} alt="Artist Profile Picture"/>
-                    <AvatarFallback>{profile?.stageName?.charAt(0) || 'A'}</AvatarFallback>
-                  </Avatar>
-                  <FormField
-                    control={form.control}
-                    name="artistProfilePictureUrl"
-                    render={({ field }) => (
-                      <FormItem className="w-full">
-                        <FormLabel className="sr-only">Profile Picture URL</FormLabel>
-                        <FormControl>
-                           <Input placeholder="https://example.com/image.png" {...field} />
-                        </FormControl>
-                         <FormDescription className="text-xs text-center">Paste an image URL to update.</FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                   <Dialog open={isCropDialogOpen} onOpenChange={setIsCropDialogOpen}>
+                     <div className="relative group w-40 h-40">
+                      <Avatar className="w-40 h-40">
+                        <AvatarImage src={form.watch('artistProfilePictureUrl') || "https://picsum.photos/seed/artist-pfp/400/400"} alt="Artist Profile Picture"/>
+                        <AvatarFallback>{profile?.stageName?.charAt(0) || 'A'}</AvatarFallback>
+                      </Avatar>
+                      <DialogTrigger asChild>
+                        <Button variant="outline" size="icon" className="absolute bottom-2 right-2 rounded-full group-hover:bg-primary group-hover:text-primary-foreground">
+                            <Edit className="w-4 h-4"/>
+                        </Button>
+                      </DialogTrigger>
+                    </div>
+                     <DialogContent className="min-w-[50vw]">
+                         <ImageCropDialog onImageCropped={handleCroppedImage} onOpenChange={setIsCropDialogOpen}/>
+                     </DialogContent>
+                   </Dialog>
+                    <FormMessage>{form.formState.errors.artistProfilePictureUrl?.message}</FormMessage>
                 </CardContent>
               </Card>
               <Card>
@@ -495,5 +499,3 @@ export default function ArtistProfilePage() {
     </div>
   );
 }
-
-    
