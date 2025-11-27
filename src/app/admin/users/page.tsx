@@ -1,4 +1,3 @@
-
 'use client';
 
 import { collection, doc, updateDoc, query } from 'firebase/firestore';
@@ -100,12 +99,8 @@ export default function AdminUsersPage() {
     }
     
     // This handles the "chicken-and-egg" problem for the first admin.
-    // If the query fails, it's likely because the user is not an admin.
+    // If the query fails due to permissions, it's likely because the user is not an admin.
     if (error && currentUser) {
-      const isCurrentUserOnlyUser = users === null || (users?.length === 1 && users[0].id === currentUser.uid);
-      
-      // A more specific check for the initial setup case.
-      if (isCurrentUserOnlyUser || users?.every(u => !u.isAdmin)) {
          return (
              <TableRow>
               <TableCell colSpan={6}>
@@ -126,7 +121,6 @@ export default function AdminUsersPage() {
               </TableCell>
              </TableRow>
          )
-      }
     }
 
     if (!users || users.length === 0) {
@@ -246,5 +240,3 @@ export default function AdminUsersPage() {
     </div>
   );
 }
-
-    
