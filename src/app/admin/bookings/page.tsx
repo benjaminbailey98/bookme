@@ -1,9 +1,8 @@
-
 'use client';
 
-import { collectionGroup, query } from 'firebase/firestore';
+import { collection, collectionGroup, query } from 'firebase/firestore';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import type { BookingRequest } from '@/lib/types';
+import type { BookingRequest, ArtistProfile } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -23,6 +22,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Loader2, PlusCircle } from 'lucide-react';
 import { format } from 'date-fns';
+import { useMemo } from 'react';
 
 export default function AdminBookingsPage() {
   const firestore = useFirestore();
@@ -31,9 +31,22 @@ export default function AdminBookingsPage() {
     if (!firestore) return null;
     return query(collectionGroup(firestore, 'booking_requests'));
   }, [firestore]);
-
-  const { data: bookings, isLoading } = useCollection<BookingRequest>(bookingsQuery);
   
+  const artistsQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'artist_profiles'));
+  }, [firestore]);
+
+  const { data: bookings, isLoading: bookingsLoading } = useCollection<BookingRequest>(bookingsQuery);
+  const { data: artists, isLoading: artistsLoading } = useCollection<ArtistProfile>(artistsQuery);
+  
+  const artistMap = useMemo(() => {
+    if (!artists) return new Map();
+    return new Map(artists.map(artist => [artist.id, artist.stageName]));
+  }, [artists]);
+
+  const isLoading = bookingsLoading || artistsLoading;
+
   const getStatusVariant = (status?: string) => {
     switch (status) {
         case 'confirmed':
@@ -87,9 +100,9 @@ export default function AdminBookingsPage() {
               {!isLoading && bookings && bookings.length > 0 ? (
                 bookings.map((booking) => (
                   <TableRow key={booking.id}>
-                    <TableCell className="font-medium">{format(booking.eventDate.toDate(), 'PPP')}</TableCell>
+                    <TableCell className="font-medium">{booking.eventDate.toDate ? format(booking.eventDate.toDate(), 'PPP') : 'Invalid Date'}</TableCell>
                     <TableCell>{booking.venueName}</TableCell>
-                    <TableCell>{booking.artistProfileId}</TableCell>
+                    <TableCell>{artistMap.get(booking.artistProfileId) || booking.artistProfileId}</TableCell>
                     <TableCell>
                       <Badge variant={getStatusVariant(booking.status)}>
                         {booking.status || 'Pending'}
