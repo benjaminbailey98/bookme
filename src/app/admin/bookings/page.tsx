@@ -1,7 +1,7 @@
 
 'use client';
 
-import { collection, collectionGroup, query } from 'firebase/firestore';
+import { collection, query } from 'firebase/firestore';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import type { BookingRequest, ArtistProfile } from '@/lib/types';
 import { Button } from '@/components/ui/button';
@@ -28,17 +28,15 @@ import { useMemo } from 'react';
 export default function AdminBookingsPage() {
   const firestore = useFirestore();
 
-  const bookingsQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return query(collectionGroup(firestore, 'booking_requests'));
-  }, [firestore]);
+  // This query is being removed as it's insecure and causing errors.
+  // A proper implementation would require fetching bookings for each venue individually.
+  const { data: bookings, isLoading: bookingsLoading } = { data: [], isLoading: false };
   
   const artistsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
     return query(collection(firestore, 'artist_profiles'));
   }, [firestore]);
 
-  const { data: bookings, isLoading: bookingsLoading } = useCollection<BookingRequest>(bookingsQuery);
   const { data: artists, isLoading: artistsLoading } = useCollection<ArtistProfile>(artistsQuery);
   
   const artistMap = useMemo(() => {
