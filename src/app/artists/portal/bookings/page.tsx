@@ -94,7 +94,7 @@ export default function ArtistBookingsPage() {
                     {!isLoading && bookings && bookings.length > 0 ? (
                         bookings.map(booking => (
                             <TableRow key={booking.id}>
-                                <TableCell className="font-medium">{format(booking.eventDate.toDate(), 'PPP')}</TableCell>
+                                <TableCell className="font-medium">{booking.eventDate.toDate ? format(booking.eventDate.toDate(), 'PPP') : 'Invalid Date'}</TableCell>
                                 <TableCell>{booking.venueName}</TableCell>
                                 <TableCell>{booking.eventType}</TableCell>
                                 <TableCell>
