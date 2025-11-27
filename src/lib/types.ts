@@ -14,6 +14,7 @@ export interface User {
     email: string;
     registrationDate: string;
     isVenue?: boolean;
+    isAdmin?: boolean;
     displayName?: string;
     phoneNumber?: string;
 }
@@ -111,3 +112,5 @@ export interface Review {
     reviewText?: string;
     createdAt: Timestamp;
 }
+
+    

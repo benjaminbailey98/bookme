@@ -49,28 +49,22 @@ export default function AdminBookingsPage() {
   const firestore = useFirestore();
   const { toast } = useToast();
 
-  // const bookingsQuery = useMemoFirebase(() => {
-  //   if (!firestore) return null;
-  //   // This collection group query requires a specific security rule to allow admins to list all bookings.
-  //   return query(collectionGroup(firestore, 'booking_requests'));
-  // }, [firestore]);
+  const bookingsQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    // This collection group query requires a specific security rule to allow admins to list all bookings.
+    return query(collectionGroup(firestore, 'booking_requests'));
+  }, [firestore]);
 
-  // const { data: bookings, isLoading: bookingsLoading } =
-  //   useCollection<BookingRequest>(bookingsQuery);
+  const { data: bookings, isLoading: bookingsLoading } =
+    useCollection<BookingRequest>(bookingsQuery);
 
-  // const artistsQuery = useMemoFirebase(() => {
-  //   if (!firestore) return null;
-  //   return query(collection(firestore, 'artist_profiles'));
-  // }, [firestore]);
+  const artistsQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'artist_profiles'));
+  }, [firestore]);
 
-  // const { data: artists, isLoading: artistsLoading } =
-  //   useCollection<ArtistProfile>(artistsQuery);
-
-  const bookings: BookingRequest[] = [];
-  const artists: ArtistProfile[] = [];
-  const bookingsLoading = true;
-  const artistsLoading = true;
-
+  const { data: artists, isLoading: artistsLoading } =
+    useCollection<ArtistProfile>(artistsQuery);
 
   const artistMap = useMemo(() => {
     if (!artists) return new Map();

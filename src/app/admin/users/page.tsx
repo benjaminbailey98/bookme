@@ -1,3 +1,4 @@
+
 'use client';
 
 import { collection, doc, updateDoc, query } from 'firebase/firestore';
@@ -23,6 +24,8 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
@@ -42,7 +45,11 @@ export default function AdminUsersPage() {
 
   const { data: users, isLoading } = useCollection<User>(usersQuery);
 
-  const handleChangeRole = async (userId: string, isVenue: boolean) => {
+  const handleRoleChange = async (
+    userId: string,
+    field: 'isVenue' | 'isAdmin',
+    value: boolean
+  ) => {
     if (!firestore) {
       toast({
         variant: 'destructive',
@@ -53,20 +60,26 @@ export default function AdminUsersPage() {
     }
 
     const userDocRef = doc(firestore, 'users', userId);
-    const newRole = isVenue ? 'Venue' : 'Artist';
+    
+    let roleDescription = '';
+    if (field === 'isVenue') {
+      roleDescription = value ? 'Venue' : 'Artist';
+    } else if (field === 'isAdmin') {
+      roleDescription = value ? 'Admin' : 'Regular User';
+    }
 
-    updateDoc(userDocRef, { isVenue })
+    updateDoc(userDocRef, { [field]: value })
       .then(() => {
         toast({
           title: 'Role Updated',
-          description: `User role has been successfully changed to ${newRole}.`,
+          description: `User role has been successfully changed to ${roleDescription}.`,
         });
       })
       .catch((serverError) => {
         const permissionError = new FirestorePermissionError({
           path: userDocRef.path,
           operation: 'update',
-          requestResourceData: { isVenue },
+          requestResourceData: { [field]: value },
         });
         errorEmitter.emit('permission-error', permissionError);
       });
@@ -81,7 +94,8 @@ export default function AdminUsersPage() {
         <CardHeader>
           <CardTitle>Registered Users</CardTitle>
           <CardDescription>
-            A list of all users, including artists and venues. (Admin access required)
+            A list of all users, including artists and venues. (Admin access
+            required)
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -92,13 +106,14 @@ export default function AdminUsersPage() {
                 <TableHead>Email</TableHead>
                 <TableHead>Registration Date</TableHead>
                 <TableHead>Role</TableHead>
+                <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading && (
                 <TableRow>
-                  <TableCell colSpan={5} className="h-24 text-center">
+                  <TableCell colSpan={6} className="h-24 text-center">
                     <Loader2 className="mx-auto h-8 w-8 animate-spin text-muted-foreground" />
                   </TableCell>
                 </TableRow>
@@ -120,6 +135,9 @@ export default function AdminUsersPage() {
                         {user.isVenue ? 'Venue' : 'Artist'}
                       </Badge>
                     </TableCell>
+                    <TableCell>
+                       {user.isAdmin && <Badge variant="destructive">Admin</Badge>}
+                    </TableCell>
                     <TableCell className="text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -129,17 +147,40 @@ export default function AdminUsersPage() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>Change Role</DropdownMenuLabel>
                           <DropdownMenuItem
-                            onClick={() => handleChangeRole(user.id, false)}
+                            onClick={() =>
+                              handleRoleChange(user.id, 'isVenue', false)
+                            }
                             disabled={user.isVenue === false}
                           >
-                            Change to Artist
+                            Set as Artist
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onClick={() => handleChangeRole(user.id, true)}
+                            onClick={() =>
+                              handleRoleChange(user.id, 'isVenue', true)
+                            }
                             disabled={user.isVenue === true}
                           >
-                            Change to Venue
+                            Set as Venue
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuLabel>Admin Actions</DropdownMenuLabel>
+                           <DropdownMenuItem
+                            onClick={() =>
+                              handleRoleChange(user.id, 'isAdmin', true)
+                            }
+                            disabled={user.isAdmin === true}
+                          >
+                            Make Admin
+                          </DropdownMenuItem>
+                           <DropdownMenuItem
+                            onClick={() =>
+                              handleRoleChange(user.id, 'isAdmin', false)
+                            }
+                            disabled={user.isAdmin !== true}
+                          >
+                            Remove Admin
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -150,7 +191,7 @@ export default function AdminUsersPage() {
                 !isLoading && (
                   <TableRow>
                     <TableCell
-                      colSpan={5}
+                      colSpan={6}
                       className="h-24 text-center text-muted-foreground"
                     >
                       Insufficient permissions to view users.
@@ -165,3 +206,5 @@ export default function AdminUsersPage() {
     </div>
   );
 }
+
+    
