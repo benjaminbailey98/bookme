@@ -28,16 +28,13 @@ import {
   Loader2,
 } from 'lucide-react';
 import { Icons } from '@/components/icons';
-import { useAuth, useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { useAuth, useUser } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { collection, query, where, limit } from 'firebase/firestore';
-import type { User } from '@/lib/types';
-
 
 const sidebarNavLinks = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
@@ -57,25 +54,16 @@ export default function AdminPortalLayout({
   children: React.ReactNode;
 }) {
   const auth = useAuth();
-  const firestore = useFirestore();
   const { user, isUserLoading } = useUser();
   const { toast } = useToast();
   const pathname = usePathname();
   const router = useRouter();
 
-  const adminQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return query(collection(firestore, 'users'), where('isAdmin', '==', true), limit(1));
-  }, [firestore]);
-
-  const { data: admins, isLoading: isAdminLoading } = useCollection<User>(adminQuery);
-  
-  useEffect(() => {
-    // If we're done loading and there are no admins, redirect to register page
-    if (!isAdminLoading && (!admins || admins.length === 0) && pathname !== '/admin/register') {
-      router.replace('/admin/register');
-    }
-  }, [isAdminLoading, admins, router, pathname]);
+  // Special case: If no admin exists yet, the /admin/register page should be accessible.
+  // This page has its own logic to check for admin existence.
+  if (pathname === '/admin/register') {
+    return <main className="flex-1">{children}</main>;
+  }
 
   const handleLogout = async () => {
     if (!auth) return;
@@ -96,19 +84,12 @@ export default function AdminPortalLayout({
     }
   };
 
-  const isLoading = isUserLoading || isAdminLoading;
-
-  if (isLoading) {
+  if (isUserLoading) {
     return (
       <div className="flex h-screen items-center justify-center">
         <Loader2 className="h-16 w-16 animate-spin text-muted-foreground" />
       </div>
     );
-  }
-
-  // Allow access to the register page if no admins exist
-  if (pathname === '/admin/register' && (!admins || admins.length === 0)) {
-     return <main className="flex-1">{children}</main>;
   }
 
   if (!user) {
@@ -120,11 +101,16 @@ export default function AdminPortalLayout({
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-muted-foreground">
-              You must be logged in to access the admin portal.
+              You must be logged in to access the admin portal. If no admin account exists, please go to the registration page.
             </p>
-            <Button asChild>
-              <Link href="/login">Login</Link>
-            </Button>
+            <div className="flex flex-col space-y-2">
+              <Button asChild>
+                <Link href="/login?redirect=/admin">Login</Link>
+              </Button>
+              <Button asChild variant="outline">
+                <Link href="/admin/register">Register First Admin</Link>
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
