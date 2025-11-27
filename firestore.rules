@@ -10,7 +10,7 @@
  * - /venue_profiles/{venueProfileId}: Publicly readable profiles for venues, with write access restricted to the owning user.
  * - /artist_profiles/{artistProfileId}: Publicly readable profiles for artists, with write access restricted to the owning user.
  * - /referrals/{referralId}: A collection for tracking referrals, with limited read access for participants.
- * - /reviews/{reviewId}: Reviews are publicly readable but can only be created by a participant of the original booking.
+ * - /reviews/{reviewId}: Reviews are private and only readable by an Admin. They can only be created by a participant of the original booking.
  */
 rules_version = '2';
 service cloud.firestore {
@@ -213,14 +213,14 @@ service cloud.firestore {
     }
 
     /**
-     * @description Manages reviews from venues and artists.
+     * @description Manages reviews from venues and artists. Reviews are private to admins.
      * @path /reviews/{reviewId}
-     * @allow (get, list) Reviews are public to all.
+     * @allow (get, list) Only admins can read reviews.
      * @allow (create) Only a participant of the original booking can create a review.
      * @deny (update, delete) Reviews are immutable.
      */
     match /reviews/{reviewId} {
-      allow get, list: if true;
+      allow get, list: if isAdmin();
       allow create: if isSignedIn() && isOwner(request.resource.data.reviewerId);
       allow update, delete: if false;
     }
