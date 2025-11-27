@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -249,3 +250,5 @@ export default function AdminBookingsPage() {
     </div>
   );
 }
+
+    

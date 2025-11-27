@@ -25,16 +25,19 @@ export default function AdminCalendarPage() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 
   // 1. Fetch confirmed bookings for the event calendar
-  const confirmedBookingsQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return query(
-      collectionGroup(firestore, 'booking_requests'),
-      where('status', '==', 'confirmed')
-    );
-  }, [firestore]);
+  // const confirmedBookingsQuery = useMemoFirebase(() => {
+  //   if (!firestore) return null;
+  //   return query(
+  //     collectionGroup(firestore, 'booking_requests'),
+  //     where('status', '==', 'confirmed')
+  //   );
+  // }, [firestore]);
 
-  const { data: bookings, isLoading: bookingsLoading } =
-    useCollection<BookingRequest>(confirmedBookingsQuery);
+  // const { data: bookings, isLoading: bookingsLoading } =
+  //   useCollection<BookingRequest>(confirmedBookingsQuery);
+  const bookings: BookingRequest[] = [];
+  const bookingsLoading = true;
+
 
   // 2. Fetch all artist profiles
   const artistsQuery = useMemoFirebase(() => {
@@ -44,11 +47,13 @@ export default function AdminCalendarPage() {
   const { data: artists, isLoading: artistsLoading } = useCollection<ArtistProfile>(artistsQuery);
 
   // 3. Fetch all availability data
-  const availabilityQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return query(collectionGroup(firestore, 'availability'));
-  }, [firestore]);
-  const { data: allAvailability, isLoading: availabilityLoading } = useCollection<ArtistAvailability>(availabilityQuery);
+  // const availabilityQuery = useMemoFirebase(() => {
+  //   if (!firestore) return null;
+  //   return query(collectionGroup(firestore, 'availability'));
+  // }, [firestore]);
+  // const { data: allAvailability, isLoading: availabilityLoading } = useCollection<ArtistAvailability>(availabilityQuery);
+  const allAvailability: ArtistAvailability[] = [];
+  const availabilityLoading = true;
 
 
   const calendarEvents = useMemo(() => {
@@ -100,7 +105,7 @@ export default function AdminCalendarPage() {
         <CardHeader>
           <CardTitle>All Confirmed Bookings</CardTitle>
           <CardDescription>
-            A master calendar view of all confirmed events on the platform.
+            A master calendar view of all confirmed events on the platform. (Admin access required)
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -118,7 +123,7 @@ export default function AdminCalendarPage() {
         <CardHeader>
           <CardTitle>Artist Availability Checker</CardTitle>
           <CardDescription>
-            Select a date to see which artists are available or unavailable.
+            Select a date to see which artists are available or unavailable. (Admin access required)
           </CardDescription>
         </CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-8">
