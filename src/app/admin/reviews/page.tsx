@@ -3,7 +3,7 @@
 
 import { useMemo } from 'react';
 import { collection, query } from 'firebase/firestore';
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { useFirestore, useCollection, useMemoFirebase, useUser } from '@/firebase';
 import type { Review, ArtistProfile, VenueProfile, User } from '@/lib/types';
 import {
   Card,
@@ -26,16 +26,19 @@ import { Badge } from '@/components/ui/badge';
 
 export default function AdminReviewsPage() {
   const firestore = useFirestore();
+  const { user: currentUser } = useUser();
+  const isUserAdmin = (currentUser as User)?.isAdmin;
+
 
   const reviewsQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
+    if (!firestore || !isUserAdmin) return null;
     return query(collection(firestore, 'reviews'));
-  }, [firestore]);
+  }, [firestore, isUserAdmin]);
 
   const usersQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
+    if (!firestore || !isUserAdmin) return null;
     return query(collection(firestore, 'users'));
-  }, [firestore]);
+  }, [firestore, isUserAdmin]);
   
 
   const { data: reviews, isLoading: reviewsLoading } =
@@ -94,14 +97,13 @@ export default function AdminReviewsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading && (
+              {isLoading && isUserAdmin ? (
                 <TableRow>
                   <TableCell colSpan={5} className="h-24 text-center">
                     <Loader2 className="mx-auto h-8 w-8 animate-spin text-muted-foreground" />
                   </TableCell>
                 </TableRow>
-              )}
-              {!isLoading && reviews && reviews.length > 0 ? (
+              ) : !isLoading && reviews && reviews.length > 0 && isUserAdmin ? (
                 reviews.map((review) => (
                   <TableRow key={review.id}>
                     <TableCell>
@@ -128,16 +130,14 @@ export default function AdminReviewsPage() {
                   </TableRow>
                 ))
               ) : (
-                !isLoading && (
                   <TableRow>
                     <TableCell
                       colSpan={5}
                       className="h-24 text-center text-muted-foreground"
                     >
-                      Insufficient permissions to view reviews.
+                       {isUserAdmin ? "No reviews found." : "Insufficient permissions to view reviews."}
                     </TableCell>
                   </TableRow>
-                )
               )}
             </TableBody>
           </Table>

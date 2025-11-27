@@ -8,15 +8,19 @@ import { collection, query, where, collectionGroup } from 'firebase/firestore';
 import type { User, ArtistProfile, VenueProfile, BookingRequest } from '@/lib/types';
 import { useMemo } from 'react';
 import { Loader2 } from 'lucide-react';
+import { useUser } from '@/firebase';
 
 export default function AdminDashboardPage() {
 
   const firestore = useFirestore();
+  const { user: currentUser } = useUser();
+  const isUserAdmin = (currentUser as User)?.isAdmin;
+
 
   const usersQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
+    if (!firestore || !isUserAdmin) return null;
     return query(collection(firestore, 'users'));
-  }, [firestore]);
+  }, [firestore, isUserAdmin]);
 
   const artistsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -29,9 +33,9 @@ export default function AdminDashboardPage() {
   }, [firestore]);
   
   const bookingsQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
+    if (!firestore || !isUserAdmin) return null;
     return query(collectionGroup(firestore, 'booking_requests'));
-  }, [firestore]);
+  }, [firestore, isUserAdmin]);
 
   const { data: users, isLoading: usersLoading } = useCollection<User>(usersQuery);
   const { data: artists, isLoading: artistsLoading } = useCollection<ArtistProfile>(artistsQuery);
@@ -55,7 +59,7 @@ export default function AdminDashboardPage() {
     ];
   }, [users, artists, venues, bookings]);
 
-  if (isLoading) {
+  if (isLoading && isUserAdmin) {
       return (
           <div className="flex h-screen items-center justify-center">
               <Loader2 className="h-16 w-16 animate-spin text-muted-foreground" />
@@ -68,38 +72,51 @@ export default function AdminDashboardPage() {
       <div className="flex items-center justify-between space-y-2">
         <h2 className="text-3xl font-bold tracking-tight">Admin Dashboard</h2>
       </div>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-        {stats.map((stat) => (
-          <Card key={stat.title}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
-              <stat.icon className="h-4 w-4 text-muted-foreground" />
+      { isUserAdmin ? (
+        <>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+            {stats.map((stat) => (
+              <Card key={stat.title}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
+                  <stat.icon className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stat.value}</div>
+                  <p className="text-xs text-muted-foreground">{stat.change}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+            <Card className="col-span-4">
+              <CardHeader>
+                <CardTitle>Recent Activity</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p>Recent activity feed coming soon.</p>
+              </CardContent>
+            </Card>
+            <Card className="col-span-3">
+              <CardHeader>
+                <CardTitle>Platform Growth</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p>Analytics chart coming soon.</p>
+              </CardContent>
+            </Card>
+          </div>
+        </>
+      ) : (
+        <Card>
+            <CardHeader>
+                <CardTitle>Welcome to the Admin Portal</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stat.value}</div>
-              <p className="text-xs text-muted-foreground">{stat.change}</p>
+                <p className="text-muted-foreground">This area is restricted. Please grant your user account admin privileges from the 'Manage Users' page to view dashboard statistics and manage the platform.</p>
             </CardContent>
-          </Card>
-        ))}
-      </div>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="col-span-4">
-          <CardHeader>
-            <CardTitle>Recent Activity</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p>Recent activity feed coming soon.</p>
-          </CardContent>
         </Card>
-        <Card className="col-span-3">
-          <CardHeader>
-            <CardTitle>Platform Growth</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p>Analytics chart coming soon.</p>
-          </CardContent>
-        </Card>
-      </div>
+      )}
     </div>
   );
 }

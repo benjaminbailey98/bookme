@@ -9,8 +9,8 @@ import {
   getDocs,
   where,
 } from 'firebase/firestore';
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import type { BookingRequest, ArtistProfile } from '@/lib/types';
+import { useFirestore, useUser, useCollection, useMemoFirebase } from '@/firebase';
+import type { BookingRequest, ArtistProfile, User } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -48,12 +48,13 @@ import Link from 'next/link';
 export default function AdminBookingsPage() {
   const firestore = useFirestore();
   const { toast } = useToast();
+  const { user: currentUser } = useUser();
+  const isUserAdmin = (currentUser as User)?.isAdmin;
 
   const bookingsQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
-    // This collection group query requires a specific security rule to allow admins to list all bookings.
+    if (!firestore || !isUserAdmin) return null;
     return query(collectionGroup(firestore, 'booking_requests'));
-  }, [firestore]);
+  }, [firestore, isUserAdmin]);
 
   const { data: bookings, isLoading: bookingsLoading } =
     useCollection<BookingRequest>(bookingsQuery);
@@ -150,14 +151,13 @@ export default function AdminBookingsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading && (
+              {isLoading && isUserAdmin ? (
                 <TableRow>
                   <TableCell colSpan={5} className="h-24 text-center">
                     <Loader2 className="mx-auto h-8 w-8 animate-spin text-muted-foreground" />
                   </TableCell>
                 </TableRow>
-              )}
-              {!isLoading && bookings && bookings.length > 0 ? (
+              ) : !isLoading && bookings && bookings.length > 0 && isUserAdmin ? (
                 bookings.map((booking) => (
                   <TableRow key={booking.id}>
                     <TableCell className="font-medium">
@@ -226,16 +226,14 @@ export default function AdminBookingsPage() {
                   </TableRow>
                 ))
               ) : (
-                !isLoading && (
                   <TableRow>
                     <TableCell
                       colSpan={5}
                       className="h-24 text-center text-muted-foreground"
                     >
-                      Insufficient permissions to view all bookings.
+                      {isUserAdmin ? "No bookings found." : "Insufficient permissions to view all bookings."}
                     </TableCell>
                   </TableRow>
-                )
               )}
             </TableBody>
           </Table>
