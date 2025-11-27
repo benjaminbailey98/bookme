@@ -96,12 +96,12 @@ service cloud.firestore {
         return isOwner(venueOwnerId) || isOwner(artistOwnerId);
     }
     
-    // WARNING: This is a placeholder for a real admin check.
-    // In production, this should check for a custom claim on the user's token.
+    /**
+     * Checks if the user has an 'admin' custom claim.
+     * This is the correct way to handle administrative privileges.
+     */
     function isAdmin() {
-      // Insecure: Allows any signed-in user to be an admin.
-      // Replace with: return request.auth.token.admin == true;
-      return isSignedIn(); 
+      return isSignedIn() && request.auth.token.admin == true;
     }
 
     //-------------------------------------------------------------------------

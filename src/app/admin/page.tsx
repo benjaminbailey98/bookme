@@ -30,7 +30,7 @@ export default function AdminDashboardPage() {
   
   const bookingsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    return query(collectionGroup(firestore, 'booking_requests'), where('status', '!=', 'draft'));
+    return query(collectionGroup(firestore, 'booking_requests'));
   }, [firestore]);
 
   const { data: users, isLoading: usersLoading } = useCollection<User>(usersQuery);
@@ -41,16 +41,15 @@ export default function AdminDashboardPage() {
   const isLoading = usersLoading || artistsLoading || venuesLoading || bookingsLoading;
 
   const stats = useMemo(() => {
-    if (!users || !artists || !venues || !bookings) return [];
-
-    const confirmedBookings = bookings.filter(b => b.status === 'confirmed').length;
-    const pendingBookings = bookings.filter(b => b.status === 'pending' || !b.status).length;
+    const safeBookings = bookings || [];
+    const confirmedBookings = safeBookings.filter(b => b.status === 'confirmed').length;
+    const pendingBookings = safeBookings.filter(b => b.status === 'pending' || !b.status).length;
     
     return [
-      { title: 'Total Users', value: users.length.toString(), icon: Users, change: '' },
-      { title: 'Registered Artists', value: artists.length.toString(), icon: Star, change: '' },
-      { title: 'Registered Venues', value: venues.length.toString(), icon: Building, change: '' },
-      { title: 'Total Bookings', value: bookings.length.toString(), icon: ListMusic, change: `${confirmedBookings} confirmed` },
+      { title: 'Total Users', value: (users || []).length.toString(), icon: Users, change: '' },
+      { title: 'Registered Artists', value: (artists || []).length.toString(), icon: Star, change: '' },
+      { title: 'Registered Venues', value: (venues || []).length.toString(), icon: Building, change: '' },
+      { title: 'Total Bookings', value: safeBookings.length.toString(), icon: ListMusic, change: `${confirmedBookings} confirmed` },
       { title: 'Pending Bookings', value: pendingBookings.toString(), icon: UserCheck, change: 'Awaiting action' },
     ];
   }, [users, artists, venues, bookings]);
