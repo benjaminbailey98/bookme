@@ -166,12 +166,12 @@ service cloud.firestore {
     /**
      * @description Secures collection group queries for 'booking_requests'.
      * @path /{path=**}/booking_requests/{bookingRequestId}
-     * @allow (list) An artist can list all booking requests where their user ID is the artistProfileId, by enforcing that the query must filter by their UID. Admins can list all bookings, but only if they filter by status.
+     * @allow (list) An artist can list all booking requests where their user ID is the artistProfileId, by enforcing that the query must filter by their UID. Admins can list all bookings.
      * @principle This rule ensures that collection group queries for bookings are securely filtered.
      */
     match /{path=**}/booking_requests/{bookingRequestId} {
         allow list: if (isSignedIn() && request.query.where.size() > 0 && request.query.where[0][2] == request.auth.uid) 
-                    || (isAdmin() && request.query.where.size() > 0 && request.query.where.filter(w => w[0] == 'status').size() > 0);
+                    || isAdmin();
     }
 
     /**
