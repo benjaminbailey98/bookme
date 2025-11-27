@@ -99,7 +99,9 @@ service cloud.firestore {
     // WARNING: This is a placeholder for a real admin check.
     // In production, this should check for a custom claim on the user's token.
     function isAdmin() {
-      return isSignedIn(); // Insecure: Allows any signed-in user to be an admin.
+      // Insecure: Allows any signed-in user to be an admin.
+      // Replace with: return request.auth.token.admin == true;
+      return isSignedIn(); 
     }
 
     //-------------------------------------------------------------------------
@@ -166,11 +168,12 @@ service cloud.firestore {
     /**
      * @description Secures collection group queries for 'booking_requests'.
      * @path /{path=**}/booking_requests/{bookingRequestId}
-     * @allow (list) An artist can list all booking requests where their user ID is the artistProfileId, by enforcing that the query must filter by their UID. Admins can list all bookings.
+     * @allow (list) An artist can list all booking requests where their user ID is the artistProfileId, by enforcing that the query must filter by their UID. Admins can list all bookings, but only if they filter by status.
      * @principle This rule ensures that collection group queries for bookings are securely filtered.
      */
     match /{path=**}/booking_requests/{bookingRequestId} {
-        allow list: if (isSignedIn() && request.query.where[0][2] == request.auth.uid) || (isAdmin() && request.query.where[0][0] == 'status');
+        allow list: if (isSignedIn() && request.query.where.size() > 0 && request.query.where[0][2] == request.auth.uid) 
+                    || (isAdmin() && request.query.where.size() > 0 && request.query.where[0][0] == 'status');
     }
 
     /**
@@ -194,7 +197,7 @@ service cloud.firestore {
        */
       match /availability/{availabilityId} {
         allow get, list: if true;
-        allow create, write: if isArtistOwner(artistProfileId) || isAdmin();
+        allow write: if isArtistOwner(artistProfileId) || isAdmin();
       }
     }
 
