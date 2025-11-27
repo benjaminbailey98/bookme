@@ -34,16 +34,20 @@ import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { useUser } from '@/firebase';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { useState } from 'react';
 
 export default function AdminUsersPage() {
   const firestore = useFirestore();
   const { user: currentUser } = useUser();
   const { toast } = useToast();
+  const [isUpdatingRole, setIsUpdatingRole] = useState(false);
 
   const usersQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
+    if (!firestore || !currentUser) return null;
+    // Only attempt to query if we think we might be an admin.
+    // The UI will handle the permission error if we are not.
     return query(collection(firestore, 'users'));
-  }, [firestore]);
+  }, [firestore, currentUser]);
 
   const { data: users, isLoading, error } = useCollection<User>(usersQuery);
 
@@ -61,6 +65,7 @@ export default function AdminUsersPage() {
       return;
     }
 
+    setIsUpdatingRole(true);
     const userDocRef = doc(firestore, 'users', userId);
     
     let roleDescription = '';
@@ -84,6 +89,9 @@ export default function AdminUsersPage() {
           requestResourceData: { [field]: value },
         });
         errorEmitter.emit('permission-error', permissionError);
+      })
+      .finally(() => {
+        setIsUpdatingRole(false);
       });
   };
 
@@ -98,8 +106,8 @@ export default function AdminUsersPage() {
       );
     }
     
-    // This handles the "chicken-and-egg" problem for the first admin.
-    // If the query fails due to permissions, it's likely because the user is not an admin.
+    // This is the key change: explicitly check for a permission error.
+    // If we get a permission error trying to list users, it's because this user is not an admin.
     if (error && currentUser) {
          return (
              <TableRow>
@@ -112,8 +120,10 @@ export default function AdminUsersPage() {
                        <Button 
                           size="sm" 
                           className="ml-4"
+                          disabled={isUpdatingRole}
                           onClick={() => handleRoleChange(currentUser.uid, 'isAdmin', true)}
                         >
+                          {isUpdatingRole && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                           Make Me Admin
                         </Button>
                     </AlertDescription>
@@ -130,7 +140,7 @@ export default function AdminUsersPage() {
             colSpan={6}
             className="h-24 text-center text-muted-foreground"
           >
-            No users found or insufficient permissions.
+            No users found.
           </TableCell>
         </TableRow>
       );
@@ -158,7 +168,7 @@ export default function AdminUsersPage() {
         <TableCell className="text-right">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 w-8 p-0">
+              <Button variant="ghost" className="h-8 w-8 p-0" disabled={isUpdatingRole}>
                 <span className="sr-only">Open menu</span>
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
@@ -169,7 +179,7 @@ export default function AdminUsersPage() {
                 onClick={() =>
                   handleRoleChange(user.id, 'isVenue', false)
                 }
-                disabled={user.isVenue === false}
+                disabled={user.isVenue === false || isUpdatingRole}
               >
                 Set as Artist
               </DropdownMenuItem>
@@ -177,7 +187,7 @@ export default function AdminUsersPage() {
                 onClick={() =>
                   handleRoleChange(user.id, 'isVenue', true)
                 }
-                disabled={user.isVenue === true}
+                disabled={user.isVenue === true || isUpdatingRole}
               >
                 Set as Venue
               </DropdownMenuItem>
@@ -187,7 +197,7 @@ export default function AdminUsersPage() {
                 onClick={() =>
                   handleRoleChange(user.id, 'isAdmin', true)
                 }
-                disabled={user.isAdmin === true}
+                disabled={user.isAdmin === true || isUpdatingRole}
               >
                 Make Admin
               </DropdownMenuItem>
@@ -195,7 +205,7 @@ export default function AdminUsersPage() {
                 onClick={() =>
                   handleRoleChange(user.id, 'isAdmin', false)
                 }
-                disabled={user.isAdmin !== true}
+                disabled={user.isAdmin !== true || isUpdatingRole}
               >
                 Remove Admin
               </DropdownMenuItem>
@@ -215,8 +225,7 @@ export default function AdminUsersPage() {
         <CardHeader>
           <CardTitle>Registered Users</CardTitle>
           <CardDescription>
-            A list of all users, including artists and venues. (Admin access
-            required)
+            A list of all users, including artists and venues.
           </CardDescription>
         </CardHeader>
         <CardContent>

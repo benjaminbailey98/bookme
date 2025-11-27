@@ -166,11 +166,11 @@ service cloud.firestore {
     /**
      * @description Secures collection group queries for 'booking_requests'.
      * @path /{path=**}/booking_requests/{bookingRequestId}
-     * @allow (list) An admin can list all bookings to get an overview.
+     * @allow (list) An admin can list all bookings to get an overview. This also allows an artist to see their bookings across all venues.
      * @principle This rule ensures that collection group queries for bookings are securely filtered.
      */
     match /{path=**}/booking_requests/{bookingRequestId} {
-        allow list: if isAdmin();
+        allow list: if isAdmin() || (isSignedIn() && request.query.where.artistProfileId == request.auth.uid);
     }
 
     /**
