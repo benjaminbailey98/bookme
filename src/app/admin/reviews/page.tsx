@@ -3,7 +3,7 @@
 import { useMemo } from 'react';
 import { collection, query } from 'firebase/firestore';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import type { Review, ArtistProfile, VenueProfile } from '@/lib/types';
+import type { Review, ArtistProfile, VenueProfile, User } from '@/lib/types';
 import {
   Card,
   CardContent,
@@ -31,35 +31,25 @@ export default function AdminReviewsPage() {
     return query(collection(firestore, 'reviews'));
   }, [firestore]);
 
-  const artistsQuery = useMemoFirebase(() => {
+  const usersQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    return query(collection(firestore, 'artist_profiles'));
-  }, [firestore]);
-
-  const venuesQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return query(collection(firestore, 'venue_profiles'));
+    return query(collection(firestore, 'users'));
   }, [firestore]);
 
   const { data: reviews, isLoading: reviewsLoading } =
     useCollection<Review>(reviewsQuery);
-  const { data: artists, isLoading: artistsLoading } =
-    useCollection<ArtistProfile>(artistsQuery);
-  const { data: venues, isLoading: venuesLoading } =
-    useCollection<VenueProfile>(venuesQuery);
+  const { data: users, isLoading: usersLoading } =
+    useCollection<User>(usersQuery);
 
   const profileMap = useMemo(() => {
     const map = new Map<string, string>();
-    if (artists) {
-      artists.forEach((artist) => map.set(artist.id, artist.stageName));
-    }
-    if (venues) {
-      venues.forEach((venue) => map.set(venue.id, venue.companyName));
+    if (users) {
+      users.forEach((user) => map.set(user.id, user.displayName || user.email));
     }
     return map;
-  }, [artists, venues]);
+  }, [users]);
 
-  const isLoading = reviewsLoading || artistsLoading || venuesLoading;
+  const isLoading = reviewsLoading || usersLoading;
 
   const renderStars = (rating: number) => {
     return (
