@@ -9,12 +9,16 @@ import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
+  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
+
+const venueImages = PlaceHolderImages.filter(img => img.id.startsWith('venue-'));
 
 export default function VenuesPage() {
   const firestore = useFirestore();
@@ -48,7 +52,8 @@ export default function VenuesPage() {
           {venues.map((venue, index) => {
             const image =
               venue.companyLogoUrl ||
-              `https://picsum.photos/seed/venue-${index}/600/400`;
+              venueImages[index % venueImages.length].imageUrl;
+            const imageHint = venueImages[index % venueImages.length].imageHint;
 
             return (
               <Card key={venue.id} className="flex flex-col">
@@ -59,11 +64,13 @@ export default function VenuesPage() {
                       alt={venue.companyName}
                       fill
                       className="rounded-t-lg object-cover"
+                      data-ai-hint={imageHint}
                     />
                   </div>
                 </CardHeader>
                 <CardContent className="flex-grow">
-                  <CardTitle className="mb-2">{venue.companyName}</CardTitle>
+                  <CardTitle className="mb-1">{venue.companyName}</CardTitle>
+                  <CardDescription>{venue.companyAddress}</CardDescription>
                 </CardContent>
                 <CardFooter className="p-6 pt-0">
                   <Button asChild className="w-full">

@@ -41,6 +41,24 @@
       "description": "A female singer on stage with a microphone.",
       "imageUrl": "https://images.unsplash.com/photo-1594125339267-3031dabc4de9?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
       "imageHint": "female singer"
+    },
+    {
+      "id": "venue-1",
+      "description": "Interior of a modern music venue with a stage.",
+      "imageUrl": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      "imageHint": "music venue"
+    },
+    {
+      "id": "venue-2",
+      "description": "An upscale restaurant with elegant decor.",
+      "imageUrl": "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      "imageHint": "upscale restaurant"
+    },
+    {
+      "id": "venue-3",
+      "description": "A large concert hall with empty seats.",
+      "imageUrl": "https://images.unsplash.com/photo-1590435345209-5a5cc9de9052?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      "imageHint": "concert hall"
     }
   ]
 }

@@ -17,6 +17,8 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 
 export default function VenuePublicProfilePage() {
   const params = useParams();
@@ -29,6 +31,8 @@ export default function VenuePublicProfilePage() {
   }, [firestore, venueId]);
 
   const { data: venue, isLoading } = useDoc<VenueProfile>(venueRef);
+  
+  const heroImage = PlaceHolderImages.find((img) => img.id === 'venue-1');
 
   if (isLoading) {
     return (
@@ -54,39 +58,79 @@ export default function VenuePublicProfilePage() {
 
   return (
     <div className="min-h-screen bg-muted/20">
-       <div className="container mx-auto py-12 md:py-20">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="md:col-span-1 space-y-6">
-                <div className="bg-background p-6 rounded-lg shadow-sm flex flex-col items-center text-center">
-                     <Avatar className="h-32 w-32 mb-4">
-                        <AvatarImage src={venue.companyLogoUrl} alt={venue.companyName} />
-                        <AvatarFallback className="text-4xl">{venue.companyName.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <h1 className="text-3xl font-bold font-headline">{venue.companyName}</h1>
-                    <p className="text-muted-foreground">{venue.companyAddress}</p>
+       <section className="relative h-64 bg-muted">
+        {heroImage && (
+          <Image
+            src={heroImage.imageUrl}
+            alt={`${venue.companyName} background`}
+            fill
+            className="object-cover"
+            priority
+            data-ai-hint={heroImage.imageHint}
+          />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-background/50 to-transparent" />
+      </section>
+
+      <div className="container mx-auto -mt-20 pb-24">
+         <div className="bg-background/80 backdrop-blur-md p-6 rounded-lg shadow-lg">
+            <div className="flex flex-col md:flex-row items-center gap-6">
+                <Avatar className="h-32 w-32 border-4 border-background">
+                    <AvatarImage src={venue.companyLogoUrl} alt={venue.companyName} />
+                    <AvatarFallback className="text-4xl">{venue.companyName.charAt(0)}</AvatarFallback>
+                </Avatar>
+                <div className="text-center md:text-left">
+                    <h1 className="text-4xl font-bold font-headline">{venue.companyName}</h1>
+                    <p className="text-muted-foreground text-lg">{venue.companyAddress}</p>
                 </div>
-                 <div className="bg-background p-6 rounded-lg shadow-sm space-y-4">
-                     <InfoItem icon={MapPin} label="Address" value={venue.companyAddress} />
-                     <InfoItem icon={Phone} label="Phone" value={venue.companyPhone} />
-                     <InfoItem icon={Mail} label="Email" value={venue.companyEmail} />
-                     <InfoItem icon={Clock} label="Hours" value={venue.businessHours} />
-                 </div>
-                 <div className="bg-background p-6 rounded-lg shadow-sm space-y-4">
-                     <h3 className="font-bold text-lg">Booking Contact</h3>
-                     <InfoItem icon={UserIcon} label={venue.contactTitle} value={venue.contactName} />
-                     <InfoItem icon={Phone} label="Contact Phone" value={venue.contactPhone} />
-                     <InfoItem icon={Mail} label="Contact Email" value={venue.contactEmail} />
-                 </div>
+                <div className="md:ml-auto w-full md:w-auto pt-4 md:pt-0">
+                    <Button asChild size="lg" className="w-full">
+                        <Link href="/artists">Book an Artist for this Venue</Link>
+                    </Button>
+                </div>
             </div>
-             <div className="md:col-span-2 bg-background p-6 rounded-lg shadow-sm">
-                <h2 className="text-2xl font-bold font-headline mb-4">Find an Artist for {venue.companyName}</h2>
-                <p className="text-muted-foreground mb-6">
-                  Ready to bring live music to your stage? Browse our curated list of talented artists and submit a booking request today.
-                </p>
-                <Button asChild size="lg">
-                  <Link href="/artists">Browse Artists & Book Now</Link>
-                </Button>
-             </div>
+         </div>
+
+        <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2 flex flex-col gap-8">
+               <Card>
+                   <CardHeader>
+                       <CardTitle>About {venue.companyName}</CardTitle>
+                   </CardHeader>
+                   <CardContent>
+                       <p className="text-muted-foreground">
+                           Detailed description about the venue will go here. This section can be used to highlight the venue's history, capacity, technical specifications, and unique features that make it an ideal choice for live entertainment.
+                       </p>
+                   </CardContent>
+               </Card>
+               <Card>
+                   <CardHeader>
+                       <CardTitle>Upcoming Events</CardTitle>
+                   </CardHeader>
+                   <CardContent>
+                       <p className="text-muted-foreground">A list or calendar of upcoming public events at the venue would go here.</p>
+                   </CardContent>
+               </Card>
+            </div>
+             <div className="space-y-8">
+                 <Card>
+                     <CardHeader><CardTitle>Venue Details</CardTitle></CardHeader>
+                     <CardContent className="space-y-4">
+                        <InfoItem icon={MapPin} label="Address" value={venue.companyAddress} />
+                        <InfoItem icon={Phone} label="Phone" value={venue.companyPhone} />
+                        <InfoItem icon={Mail} label="Email" value={venue.companyEmail} />
+                        <InfoItem icon={Clock} label="Hours" value={venue.businessHours} />
+                     </CardContent>
+                 </Card>
+                 <Card>
+                     <CardHeader><CardTitle>Booking Contact</CardTitle></CardHeader>
+                     <CardContent className="space-y-4">
+                        <InfoItem icon={UserIcon} label={venue.contactTitle} value={venue.contactName} />
+                        <InfoItem icon={Phone} label="Contact Phone" value={venue.contactPhone} />
+                        <InfoItem icon={Mail} label="Contact Email" value={venue.contactEmail} />
+                     </CardContent>
+                 </Card>
+            </div>
         </div>
       </div>
     </div>
@@ -97,15 +141,15 @@ export default function VenuePublicProfilePage() {
 interface InfoItemProps {
     icon: React.ElementType;
     label: string;
-    value: string;
+    value?: string;
 }
 
 const InfoItem = ({ icon: Icon, label, value }: InfoItemProps) => (
-    <div className="flex items-start gap-3">
+    <div className="flex items-start gap-4">
         <Icon className="h-5 w-5 text-muted-foreground mt-1 shrink-0" />
         <div>
             <p className="text-sm font-medium text-muted-foreground">{label}</p>
-            <p className="font-medium">{value}</p>
+            <p className="font-semibold">{value || 'Not provided'}</p>
         </div>
     </div>
 )
