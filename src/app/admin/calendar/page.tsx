@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo, useState } from 'react';
@@ -92,7 +91,7 @@ export default function AdminCalendarPage() {
   }, [artists, allAvailability, selectedDate]);
 
 
-  const isLoading = (bookingsLoading || availabilityLoading) && isUserAdmin;
+  const isLoading = (bookingsLoading || availabilityLoading || artistsLoading) && isUserAdmin;
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
@@ -200,5 +199,3 @@ export default function AdminCalendarPage() {
     </div>
   );
 }
-
-    
