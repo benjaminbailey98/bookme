@@ -133,6 +133,15 @@ service cloud.firestore {
         allow read, write: if isOwner(userId) || isAdmin();
       }
     }
+    
+     /**
+     * @description Secures collection group queries for 'subscriptions'.
+     * @path /{path=**}/subscriptions/{subscriptionId}
+     * @allow (list) An admin can list all subscriptions.
+     */
+    match /{path=**}/subscriptions/{subscriptionId} {
+        allow list: if isAdmin();
+    }
 
     /**
      * @description Manages public venue profiles.
