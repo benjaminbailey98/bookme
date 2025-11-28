@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -111,7 +112,7 @@ export default function ArtistBookingsPage() {
 
     const reviewsCollection = collection(firestore, 'reviews');
     try {
-      await addDoc(reviewsCollection, { ...reviewData, createdAt: new Date() });
+      await addDoc(reviewsCollection, { ...reviewData, createdAt: Timestamp.now() });
       toast({ title: 'Review Submitted', description: 'Thank you for your feedback!' });
       // Close dialog
       setSelectedBooking(null); 

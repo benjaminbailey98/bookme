@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -7,6 +8,7 @@ import {
   updateDoc,
   doc,
   addDoc,
+  Timestamp,
 } from 'firebase/firestore';
 import {
   useFirestore,
@@ -14,7 +16,7 @@ import {
   useCollection,
   useMemoFirebase,
 } from '@/firebase';
-import type { BookingRequest, ArtistProfile } from '@/lib/types';
+import type { BookingRequest, ArtistProfile, Review } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -82,25 +84,6 @@ export default function VenueBookingsPage() {
 
   const isLoading = bookingsLoading || artistsLoading;
 
-  const handleStatusChange = async (bookingId: string, newStatus: string) => {
-    if (!user || !firestore) return;
-    const bookingDocRef = doc(firestore, 'venue_profiles', user.uid, 'booking_requests', bookingId);
-    try {
-      await updateDoc(bookingDocRef, { status: newStatus });
-      toast({
-        title: 'Status Updated',
-        description: `Booking status has been changed to ${newStatus}.`,
-      });
-    } catch (serverError) {
-      const permissionError = new FirestorePermissionError({
-        path: bookingDocRef.path,
-        operation: 'update',
-        requestResourceData: { status: newStatus },
-      });
-      errorEmitter.emit('permission-error', permissionError);
-    }
-  };
-
   const handleReviewSubmit = async () => {
     if (!user || !firestore || !selectedBooking || rating === 0) {
       toast({
@@ -112,18 +95,18 @@ export default function VenueBookingsPage() {
     }
     setIsSubmitting(true);
     
-    const reviewData = {
+    const reviewData: Omit<Review, 'id' | 'createdAt'> = {
       bookingRequestId: selectedBooking.id,
-      artistProfileId: selectedBooking.artistProfileId,
-      venueProfileId: user.uid,
+      reviewerId: user.uid,
+      revieweeId: selectedBooking.artistProfileId, // Venue reviews the artist
+      reviewerRole: 'venue',
       rating,
       reviewText: review,
-      createdAt: new Date(),
     };
 
     const reviewsCollection = collection(firestore, 'reviews');
     try {
-      await addDoc(reviewsCollection, reviewData);
+      await addDoc(reviewsCollection, { ...reviewData, createdAt: Timestamp.now() });
       toast({ title: 'Review Submitted', description: 'Thank you for your feedback!' });
       setRating(0);
       setReview('');
@@ -204,14 +187,6 @@ export default function VenueBookingsPage() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right space-x-2">
-                       {booking.status === 'confirmed' && new Date() > (booking.eventDate.toDate ? booking.eventDate.toDate() : new Date(booking.eventDate)) && (
-                         <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleStatusChange(booking.id, 'completed')}>
-                            Mark as Completed
-                         </Button>
-                      )}
                       {booking.status === 'completed' && (
                         <Dialog
                           onOpenChange={(open) => {
