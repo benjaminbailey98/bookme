@@ -118,7 +118,7 @@ function VenueRegistrationPage() {
         dueDate: Timestamp.fromDate(add(now, { days: 30 })),
         accountStatus: 'active',
         paymentStatus: 'paid',
-        paymentHistory: [],
+        paymentHistory: ['INV-TRIAL-001'],
       };
       batch.set(subscriptionRef, { ...newSubscription, id: 'default' });
 

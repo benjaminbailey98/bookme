@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -95,22 +94,24 @@ export default function VenueSubscriptionPage() {
       setIsActionLoading(true);
       const subDocRef = doc(firestore, 'users', user.uid, 'subscriptions', subscription.id);
       
-      try {
-          await updateDoc(subDocRef, { accountStatus: newStatus });
-          toast({
-              title: "Subscription Updated",
-              description: `Your subscription is now ${newStatus}.`
-          });
-      } catch (error) {
-          const permissionError = new FirestorePermissionError({
-            path: subDocRef.path,
-            operation: 'update',
-            requestResourceData: { accountStatus: newStatus }
-          });
-          errorEmitter.emit('permission-error', permissionError);
-      } finally {
-        setIsActionLoading(false);
-      }
+      updateDoc(subDocRef, { accountStatus: newStatus })
+        .then(() => {
+            toast({
+                title: "Subscription Updated",
+                description: `Your subscription is now ${newStatus}.`
+            });
+        })
+        .catch(error => {
+            const permissionError = new FirestorePermissionError({
+              path: subDocRef.path,
+              operation: 'update',
+              requestResourceData: { accountStatus: newStatus }
+            });
+            errorEmitter.emit('permission-error', permissionError);
+        })
+        .finally(() => {
+          setIsActionLoading(false);
+        });
   }
 
   const renderSubscriptionDetails = () => {
@@ -194,16 +195,19 @@ export default function VenueSubscriptionPage() {
             </CardHeader>
             <CardContent className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                  <Button onClick={() => handleSubscriptionAction('paused')} disabled={subscription?.accountStatus === 'paused' || isLoading || isActionLoading} variant="outline" className="w-full">
+                    {isActionLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     <PauseCircle className="mr-2 h-4 w-4" />
                     Pause
                  </Button>
                  <Button onClick={() => handleSubscriptionAction('active')} disabled={subscription?.accountStatus === 'active' || isLoading || isActionLoading} className="w-full">
-                     <PlayCircle className="mr-2 h-4 w-4" />
+                    {isActionLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    <PlayCircle className="mr-2 h-4 w-4" />
                     Resume
                  </Button>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                      <Button variant="destructive" disabled={isLoading || isActionLoading || subscription?.accountStatus === 'canceled'} className="w-full">
+                        {isActionLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         <XCircle className="mr-2 h-4 w-4" />
                         Cancel
                     </Button>
@@ -285,5 +289,3 @@ export default function VenueSubscriptionPage() {
     </div>
   );
 }
-
-    
