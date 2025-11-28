@@ -1,6 +1,7 @@
 
 'use client';
 
+import { useState } from 'react';
 import { collection, query } from 'firebase/firestore';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import type { VenueProfile } from '@/lib/types';
@@ -21,10 +22,20 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Loader2, PlusCircle } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { VenueForm } from './venue-form';
 import Link from 'next/link';
 
 export default function AdminVenuesPage() {
   const firestore = useFirestore();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const venuesQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -37,9 +48,23 @@ export default function AdminVenuesPage() {
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
       <div className="flex items-center justify-between space-y-2">
         <h2 className="text-3xl font-bold tracking-tight">Manage Venues</h2>
-        <Button>
-          <PlusCircle className="mr-2 h-4 w-4" /> Add Venue
-        </Button>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <PlusCircle className="mr-2 h-4 w-4" /> Add Venue
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Create New Venue Profile</DialogTitle>
+              <DialogDescription>
+                Fill out the form to create a new user account and venue
+                profile.
+              </DialogDescription>
+            </DialogHeader>
+            <VenueForm onSuccess={() => setIsDialogOpen(false)} />
+          </DialogContent>
+        </Dialog>
       </div>
       <Card>
         <CardHeader>
