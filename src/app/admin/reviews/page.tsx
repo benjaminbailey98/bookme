@@ -1,10 +1,9 @@
-
 'use client';
 
 import { useMemo } from 'react';
-import { collection, query } from 'firebase/firestore';
+import { collection, query, orderBy } from 'firebase/firestore';
 import { useFirestore, useCollection, useMemoFirebase, useUser } from '@/firebase';
-import type { Review, ArtistProfile, VenueProfile, User } from '@/lib/types';
+import type { Review, User } from '@/lib/types';
 import {
   Card,
   CardContent,
@@ -32,7 +31,7 @@ export default function AdminReviewsPage() {
 
   const reviewsQuery = useMemoFirebase(() => {
     if (!firestore || !isUserAdmin) return null;
-    return query(collection(firestore, 'reviews'));
+    return query(collection(firestore, 'reviews'), orderBy('createdAt', 'desc'));
   }, [firestore, isUserAdmin]);
 
   const usersQuery = useMemoFirebase(() => {
@@ -46,7 +45,7 @@ export default function AdminReviewsPage() {
   const { data: users, isLoading: usersLoading } =
     useCollection<User>(usersQuery);
 
-  const profileMap = useMemo(() => {
+  const userMap = useMemo(() => {
     const map = new Map<string, string>();
     if (users) {
       users.forEach((user) => map.set(user.id, user.displayName || user.email));
@@ -54,7 +53,7 @@ export default function AdminReviewsPage() {
     return map;
   }, [users]);
 
-  const isLoading = reviewsLoading || usersLoading;
+  const isLoading = (reviewsLoading || usersLoading) && isUserAdmin;
 
   const renderStars = (rating: number) => {
     return (
@@ -97,7 +96,7 @@ export default function AdminReviewsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading && isUserAdmin ? (
+              {isLoading ? (
                 <TableRow>
                   <TableCell colSpan={5} className="h-24 text-center">
                     <Loader2 className="mx-auto h-8 w-8 animate-spin text-muted-foreground" />
@@ -113,13 +112,13 @@ export default function AdminReviewsPage() {
                     </TableCell>
                     <TableCell>
                       <div className="font-medium">
-                        {profileMap.get(review.reviewerId) || 'Unknown User'}
+                        {userMap.get(review.reviewerId) || 'Unknown User'}
                       </div>
                       <Badge variant="outline">{review.reviewerRole}</Badge>
                     </TableCell>
                      <TableCell>
                       <div className="font-medium">
-                        {profileMap.get(review.revieweeId) || 'Unknown User'}
+                        {userMap.get(review.revieweeId) || 'Unknown User'}
                       </div>
                       <Badge variant="secondary">{review.reviewerRole === 'artist' ? 'venue' : 'artist'}</Badge>
                     </TableCell>
@@ -146,5 +145,3 @@ export default function AdminReviewsPage() {
     </div>
   );
 }
-
-    
