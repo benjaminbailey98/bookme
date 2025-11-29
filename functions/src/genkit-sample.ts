@@ -71,7 +71,7 @@ export const menuSuggestion = onCallGenkit({
   // enforceAppCheck: true,
 
   // authPolicy can be any callback that accepts an AuthData (a uid and tokens
-  // dictionary) and the request data. The isSignedIn() and hasClaim() helpers
+  // dictionary) and the isSignedIn() and hasClaim() helpers
   // can be used to simplify. The following will require the user to have the
   // email_verified claim, for example.
   // authPolicy: hasClaim("email_verified"),
