@@ -1,0 +1,65 @@
+type User @table {
+  displayName: String!
+  email: String!
+  userType: String!
+  createdAt: Timestamp!
+  photoUrl: String
+  bio: String
+  contactInfo: String
+}
+
+type EventRequest @table {
+  eventName: String!
+  eventDate: Date!
+  startTime: Timestamp!
+  endTime: Timestamp!
+  location: String!
+  budget: Float!
+  status: String!
+  description: String
+  eventType: String
+  preferredGenre: String
+  organizer: User
+}
+
+type EntertainmentProfile @table {
+  actType: String!
+  description: String!
+  hourlyRate: Float!
+  createdAt: Timestamp!
+  genre: String
+  youtubeLink: String
+  instagramLink: String
+  city: String
+  rating: Float
+  entertainer: User
+}
+
+type Booking @table {
+  status: String!
+  requestedRate: Float!
+  createdAt: Timestamp!
+  actualPaymentAmount: Float
+  organizerNotes: String
+  entertainerNotes: String
+  eventRequest: EventRequest
+  entertainer: User
+}
+
+type Review @table {
+  rating: Int!
+  createdAt: Timestamp!
+  comment: String
+  booking: Booking
+  organizer: User
+  entertainer: User
+}
+
+type Availability @table {
+  date: Date!
+  startTime: Timestamp!
+  endTime: Timestamp!
+  isAvailable: Boolean!
+  notes: String
+  entertainer: User
+}

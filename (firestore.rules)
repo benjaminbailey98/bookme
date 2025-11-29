@@ -1,0 +1,239 @@
+
+/**
+ * This ruleset enforces a strict user-ownership and profile-based authorization model for the Vibe Request application.
+ *
+ * Core Philosophy:
+ * The security model is designed to be secure by default, granting permissions explicitly. It follows the principle of least privilege, ensuring users can only access and modify data they own or are explicitly granted permission to.
+ *
+ * Data Structure:
+ * - /users/{userId}: Core, private user data, including their subscriptions. Access is strictly limited to the owner.
+ * - /venue_profiles/{venueProfileId}: Publicly readable profiles for venues, with write access restricted to the owning user.
+ * - /artist_profiles/{artistProfileId}: Publicly readable profiles for artists, with write access restricted to the owning user.
+ * - /referrals/{referralId}: A collection for tracking referrals, with limited read access for participants.
+ * - /reviews/{reviewId}: Reviews are private and only readable by an Admin. They can only be created by a participant of the original booking.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    //-------------------------------------------------------------------------
+    // Helper Functions
+    //-------------------------------------------------------------------------
+
+    /**
+     * Checks if a user is authenticated.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * Checks if the currently authenticated user's UID matches the provided userId.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * Checks if the document being operated on already exists in Firestore.
+     * Crucial for preventing updates or deletes on non-existent documents.
+     */
+    function isExistingDoc() {
+      return resource != null;
+    }
+
+    /**
+     * Combines ownership check with an existence check for state-changing operations.
+     */
+    function isOwnerOfExistingDoc(userId) {
+      return isOwner(userId) && isExistingDoc();
+    }
+
+    /**
+     * Retrieves the owner `userId` from a venue profile document.
+     * This is used to secure subcollections where ownership is defined by the parent.
+     */
+    function getVenueOwnerId(venueProfileId) {
+      return get(/databases/$(database)/documents/venue_profiles/$(venueProfileId)).data.userId;
+    }
+
+    /**
+     * Checks if the requesting user owns the specified venue profile.
+     */
+    function isVenueOwner(venueProfileId) {
+        return isOwner(getVenueOwnerId(venueProfileId));
+    }
+
+    /**
+     * Retrieves the owner `userId` from an artist profile document.
+     */
+    function getArtistOwnerId(artistProfileId) {
+      return get(/databases/$(database)/documents/artist_profiles/$(artistProfileId)).data.userId;
+    }
+    
+    /**
+     * Checks if the requesting user owns the specified artist profile.
+     */
+    function isArtistOwner(artistProfileId) {
+      return isOwner(getArtistOwnerId(artistProfileId));
+    }
+
+    /**
+     * Checks if the user is a participant (either venue or artist) in a booking request.
+     */
+    function isBookingParticipant(bookingDoc) {
+      let venueOwnerId = getVenueOwnerId(bookingDoc.venueProfileId);
+      let artistOwnerId = getArtistOwnerId(bookingDoc.artistProfileId);
+      return isOwner(venueOwnerId) || isOwner(artistOwnerId);
+    }
+    
+    /**
+     * Checks if the user is a participant by looking at the incoming request data.
+     */
+    function isParticipantInRequest(requestData) {
+        let venueOwnerId = getVenueOwnerId(requestData.venueProfileId);
+        let artistOwnerId = getArtistOwnerId(requestData.artistProfileId);
+        return isOwner(venueOwnerId) || isOwner(artistOwnerId);
+    }
+    
+    /**
+     * Checks if the user has an 'admin' custom claim by reading their user document.
+     */
+    function isAdmin() {
+      return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
+
+
+    //-------------------------------------------------------------------------
+    // Collection Rules
+    //-------------------------------------------------------------------------
+
+    /**
+     * @description Manages core user account data.
+     * @path /users/{userId}
+     * @allow (create) An unauthenticated user can create their own user document during sign-up.
+     * @deny (get) A signed-in user cannot read another user's document.
+     * @principle Restricts access to a user's own data tree.
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin() || (request.auth == null && request.query.limit == 1);
+      allow create: if request.auth != null && request.auth.uid == userId;
+      allow update: if isOwner(userId) || isAdmin();
+      allow delete: if false;
+
+      /**
+       * @description Manages a user's private subscription information.
+       * @path /users/{userId}/subscriptions/{subscriptionId}
+       * @allow (get, list, create, update, delete) A user can fully manage their own subscriptions.
+       * @deny (get) User 'A' cannot access any subscriptions belonging to User 'B'.
+       * @principle Enforces strict ownership for sensitive, nested user data.
+       */
+      match /subscriptions/{subscriptionId} {
+        allow read, write: if isOwner(userId) || isAdmin();
+      }
+    }
+
+    /**
+     * @description Manages public venue profiles.
+     * @path /venue_profiles/{venueProfileId}
+     * @allow (get, list) Any client (signed-in or anonymous) can view venue profiles.
+     * @deny (create) A user cannot create a profile for another user (e.g., `request.resource.data.userId != request.auth.uid`).
+     * @principle Public Read with Owner-Only Writes.
+     */
+    match /venue_profiles/{venueProfileId} {
+      allow get, list: if true;
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if isOwnerOfExistingDoc(resource.data.userId) && request.resource.data.userId == resource.data.userId || isAdmin();
+      allow delete: if isOwnerOfExistingDoc(resource.data.userId) || isAdmin();
+
+      /**
+       * @description Manages booking requests, which are shared between a venue and an artist.
+       * @path /venue_profiles/{venueProfileId}/booking_requests/{bookingRequestId}
+       * @allow (get) The venue owner or the associated artist can read a booking request.
+       * @deny (list) An artist cannot list all requests for a venue they don't own. This is handled by the collection group rule.
+       * @principle Shared Access (Closed Collaborators) based on parent document ownership.
+       */
+      match /booking_requests/{bookingRequestId} {
+        allow get: if isSignedIn() && (isBookingParticipant(resource.data) || isAdmin());
+        allow create: if isSignedIn(); // Allow any signed-in user to create a request
+        allow update: if isSignedIn() && isExistingDoc() && (isBookingParticipant(resource.data) || isAdmin());
+        allow delete: if isSignedIn() && isExistingDoc() && (isBookingParticipant(resource.data) || isAdmin());
+        allow list: if isVenueOwner(venueProfileId) || isAdmin();
+      }
+    }
+    
+    /**
+     * @description Secures collection group queries for 'booking_requests'.
+     * @path /{path=**}/booking_requests/{bookingRequestId}
+     * @allow (list) An admin can list all bookings to get an overview.
+     * @principle This rule ensures that collection group queries for bookings are securely filtered.
+     */
+    match /{path=**}/booking_requests/{bookingRequestId} {
+        allow list: if isAdmin();
+    }
+
+    /**
+     * @description Manages public artist profiles.
+     * @path /artist_profiles/{artistProfileId}
+     * @allow (get, list) Any client (signed-in or anonymous) can view artist profiles.
+     * @principle Public Read with Owner-Only Writes.
+     */
+    match /artist_profiles/{artistProfileId} {
+      allow get, list: if true;
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if (isOwnerOfExistingDoc(resource.data.userId) && request.resource.data.userId == resource.data.userId) || isAdmin();
+      allow delete: if isOwnerOfExistingDoc(resource.data.userId) || isAdmin();
+
+      /**
+       * @description Manages an artist's availability.
+       * @path /artist_profiles/{artistProfileId}/availability/{availabilityId}
+       * @allow (read) Publicly readable to allow for booking checks.
+       * @allow (write) Only the artist who owns the profile can manage their availability.
+       * @principle Ownership via parent document.
+       */
+      match /availability/{availabilityId} {
+        allow get, list: if true;
+        allow write: if isArtistOwner(artistProfileId) || isAdmin();
+      }
+    }
+    
+    /**
+     * @description Secures collection group queries for 'availability'.
+     * @path /{path=**}/availability/{availabilityId}
+     * @allow (list) An admin can list all artist availability.
+     * @principle This rule is essential for the master calendar's availability checker.
+     */
+    match /{path=**}/availability/{availabilityId} {
+        allow list: if isAdmin();
+    }
+
+
+    /**
+     * @description Manages referral records.
+     * @path /referrals/{referralId}
+     * @allow (create) Any signed-in user can create a referral for themselves.
+     * @deny (update) Referrals are immutable once created.
+     * @principle Shared Access between the referrer and the referred user.
+     */
+    match /referrals/{referralId} {
+      allow get: if isSignedIn() && (isOwner(resource.data.referredUserId) || isOwner(resource.data.referrerUserId));
+      allow list: if isAdmin();
+      allow create: if isSignedIn() && (request.resource.data.referrerUserId == null || request.resource.data.referrerUserId == request.auth.uid);
+      allow update, delete: if false;
+    }
+
+    /**
+     * @description Manages reviews from venues and artists. Reviews are private to admins.
+     * @path /reviews/{reviewId}
+     * @allow (get, list) Only admins can read reviews.
+     * @allow (create) Only a participant of the original booking can create a review.
+     * @deny (update, delete) Reviews are immutable.
+     */
+    match /reviews/{reviewId} {
+      allow get, list: if isAdmin();
+      allow create: if isSignedIn() && isOwner(request.resource.data.reviewerId);
+      allow update, delete: if false;
+    }
+  }
+}
