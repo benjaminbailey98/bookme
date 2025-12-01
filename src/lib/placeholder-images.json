@@ -3,7 +3,7 @@
     {
       "id": "hero-concert",
       "description": "A vibrant concert with a singer on stage and an excited crowd.",
-      "imageUrl": "https://images.unsplash.com/photo-1540039233332-cb642d6a5c20?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      "imageUrl": "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
       "imageHint": "concert crowd"
     },
     {
@@ -27,7 +27,7 @@
     {
       "id": "artist-4",
       "description": "A female acoustic guitarist and singer.",
-      "imageUrl": "https://images.unsplash.com/photo-1552831341-353985392688?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxNXx8ZmVtYWxlJTIwYWNvdXN0aWMlMjBndWl0YXJpc3R8ZW58MHx8fHwxNzE3MDM2MTc2fDA",
+      "imageUrl": "https://images.unsplash.com/photo-1552831341-353985392688?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
       "imageHint": "female guitarist"
     },
     {
