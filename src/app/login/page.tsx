@@ -1,4 +1,3 @@
-
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -28,6 +27,7 @@ import { signInWithEmailAndPassword } from 'firebase/auth';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { Suspense } from 'react';
 
 const loginFormSchema = z.object({
   email: z.string().email('Please enter a valid email.'),
@@ -36,7 +36,7 @@ const loginFormSchema = z.object({
 
 type LoginFormValues = z.infer<typeof loginFormSchema>;
 
-export default function LoginPage() {
+function LoginPageContent() {
   const { toast } = useToast();
   const auth = useAuth();
   const router = useRouter();
@@ -136,5 +136,13 @@ export default function LoginPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginPageContent />
+    </Suspense>
   );
 }

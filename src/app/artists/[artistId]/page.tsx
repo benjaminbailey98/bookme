@@ -11,7 +11,7 @@ import {
   Youtube,
   Instagram,
   Facebook,
-  Spotify,
+  Music as Spotify,
   Globe,
   Loader2,
   ListMusic,

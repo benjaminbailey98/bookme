@@ -9,7 +9,7 @@ import { Slider } from '@/components/ui/slider';
 import { DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
-import { getCroppedImg } from '@/lib/crop-image';
+import getCroppedImg from '@/lib/crop-image';
 
 interface ImageCropDialogProps {
   onImageCropped: (image: string | null) => void;

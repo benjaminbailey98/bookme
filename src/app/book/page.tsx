@@ -1,6 +1,7 @@
+import { Suspense } from 'react';
 import { BookingForm } from './booking-form';
 
-export default function BookingPage() {
+function BookingPageComponent() {
   return (
     <div className="container mx-auto max-w-4xl py-12 md:py-20">
       <div className="space-y-2 text-center mb-12">
@@ -14,5 +15,13 @@ export default function BookingPage() {
       </div>
       <BookingForm />
     </div>
+  );
+}
+
+export default function BookingPage() {
+  return (
+    <Suspense>
+      <BookingPageComponent />
+    </Suspense>
   );
 }
