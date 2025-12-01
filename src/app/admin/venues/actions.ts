@@ -7,8 +7,7 @@ import { getFirestore, doc, setDoc } from 'firebase/firestore';
 import { VenueProfile, User } from '@/lib/types';
 import { firebaseConfig } from '@/firebase/config';
 
-// This is a temporary solution for server-side Firebase admin actions.
-// In a real-world scenario, you would use a more secure way to manage service accounts.
+
 const getApp = (): App => {
   if (getApps().length > 0) {
     return getApps()[0];
@@ -20,12 +19,14 @@ export async function createVenueAccountAndProfile(
   profileData: Omit<VenueProfile, 'id' | 'userId'>,
   password: string
 ): Promise<{ success: boolean; error?: string }> {
+  // This server action attempts to use client-side auth methods on the server,
+  // which is not the correct pattern. A proper implementation would use the
+  // Firebase Admin SDK in a secure backend environment.
   try {
     const app = getApp();
     const auth = getAuth(app);
     const firestore = getFirestore(app);
 
-    // 1. Create the user account in Firebase Auth
     const userCredential = await createUserWithEmailAndPassword(
       auth,
       profileData.companyEmail,
@@ -33,7 +34,6 @@ export async function createVenueAccountAndProfile(
     );
     const userRecord = userCredential.user;
 
-    // 2. Create the user document in the `users` collection
     const userDocRef = doc(firestore, 'users', userRecord.uid);
     const newUserData: User = {
       id: userRecord.uid,
@@ -44,7 +44,6 @@ export async function createVenueAccountAndProfile(
     };
     await setDoc(userDocRef, newUserData);
 
-    // 3. Create the venue_profile document
     const venueProfileRef = doc(firestore, 'venue_profiles', userRecord.uid);
     const newVenueProfile: VenueProfile = {
       ...profileData,
