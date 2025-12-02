@@ -11,7 +11,7 @@ import {
   Youtube,
   Instagram,
   Facebook,
-  Music as Spotify,
+  Music,
   Globe,
   Loader2,
   ListMusic,
@@ -123,7 +123,7 @@ export default function ArtistPublicProfilePage() {
               {artist.instagramUrl && <SocialLink href={artist.instagramUrl} icon={Instagram} label="Instagram" />}
               {artist.facebookUrl && <SocialLink href={artist.facebookUrl} icon={Facebook} label="Facebook" />}
               {artist.youtubeUrl && <SocialLink href={artist.youtubeUrl} icon={Youtube} label="YouTube" />}
-              {artist.spotifyUrl && <SocialLink href={artist.spotifyUrl} icon={Spotify} label="Spotify" />}
+              {artist.spotifyUrl && <SocialLink href={artist.spotifyUrl} icon={Music} label="Spotify" />}
               {artist.additionalLinks?.map(link => (
                   <SocialLink key={link.platform} href={link.url} icon={LinkIcon} label={link.platform} />
               ))}
