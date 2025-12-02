@@ -2,6 +2,7 @@
 # See https://firebase.google.com/docs/app-hosting/configure#cloud-run
 runConfig:
   minInstances: 0
+  
   # maxInstances: 100
   # concurrency: 80
   # cpu: 1
@@ -10,7 +11,7 @@ runConfig:
 # Environment variables and secrets.
 # env:
   # Configure environment variables.
-  # See https://firebase.google.com/docs/app-hosting/configure#user-defined-environment
+  # See https:/git push m/firebase.google.com/docs/app-hosting/configure#user-defined-environment
   # - variable: MESSAGE
   #   value: Hello world!
   #   availability:
