@@ -17,7 +17,7 @@ import {onCallGenkit} from "firebase-functions/https";
 // Express Mode (vertexAI with apiKey) you can get an API key from the Vertex AI
 // Studio Express Mode setup.
 import {defineSecret} from "firebase-functions/params";
-const apiKey = defineSecret("GOOGLE_GENAI_API_KEY");
+// const apiKey = defineSecret("GOOGLE_GENAI_API_KEY");
 
 // The Firebase telemetry plugin exports a combination of metrics, traces, and
 // logs to Google Cloud Observability.
@@ -77,5 +77,6 @@ export const menuSuggestion = onCallGenkit({
   // authPolicy: hasClaim("email_verified"),
 
   // Grant access to the API key to this function:
-  secrets: [apiKey],
+  // secrets: [apiKey],
 }, menuSuggestionFlow);
+

@@ -40,6 +40,10 @@ const profileFormSchema = z.object({
   managementContactPerson: z.string().optional(),
   managementEmail: z.string().email().optional().or(z.literal('')),
   managementPhone: z.string().optional(),
+  // Add missing optional fields to match ArtistProfile type
+  artistProfilePictureUrl: z.string().url().optional().or(z.literal('')),
+  artistPerformingVideoUrl: z.string().url().optional().or(z.literal('')),
+  additionalLinks: z.array(z.object({ platform: z.string(), url: z.string() })).optional(),
 });
 
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
