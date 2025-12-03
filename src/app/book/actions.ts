@@ -6,12 +6,22 @@ import {
   type IntelligentFormCompletionInput,
   type IntelligentFormCompletionOutput,
 } from '@/ai/flows/intelligent-form-completion';
-import { addDoc, collection, doc, serverTimestamp, Timestamp } from 'firebase/firestore';
+import { addDoc, collection, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { getFirestore } from 'firebase/firestore';
-import { initializeFirebase } from '@/firebase';
+import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
 import { BookingRequest } from '@/lib/types';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import { firebaseConfig } from '@/firebase/config';
+
+// Helper to get a server-side Firebase app instance
+const getApp = (): FirebaseApp => {
+  if (getApps().length > 0) {
+    return getApps()[0];
+  }
+  return initializeApp(firebaseConfig);
+};
+
 
 export async function getSuggestions(
   input: IntelligentFormCompletionInput
@@ -33,27 +43,42 @@ export async function getSuggestions(
 
 
 export async function submitBookingRequest(
-  requestData: Omit<BookingRequest, 'id' | 'status' | 'venueProfileId'>,
+  requestData: Omit<BookingRequest, 'id' | 'status'>,
   venueProfileId: string,
 ): Promise<{ success: boolean; error?: string; bookingId?: string; }> {
-  // This action is called from a client component, but runs on the server.
-  // We need a server-side initialized firestore instance.
-  // The 'initializeFirebase' helper is designed for client-side use.
-  // For this server action, we will need to adjust how we get Firestore.
-  // However, without a proper admin setup, we'll simulate the data that would be sent.
-  // In a real app, this would use the Admin SDK with service account credentials.
+  try {
+    const app = getApp();
+    const firestore = getFirestore(app);
 
-  console.log("Simulating booking submission on the server for venue:", venueProfileId);
-  console.log("Booking data:", requestData);
-  
-  // This is a placeholder response. In a real scenario, you would integrate
-  // with a secure backend service to add this data to Firestore.
-  // The client-side logic is already set up to handle this response.
+    const bookingCollection = collection(firestore, 'venue_profiles', venueProfileId, 'booking_requests');
+    
+    // The requestData.eventDate is a Date object from the form, it needs to be converted to a Firestore Timestamp
+    const bookingDataWithTimestamp = {
+      ...requestData,
+      eventDate: Timestamp.fromDate(requestData.eventDate as unknown as Date),
+      status: 'pending' as const,
+      createdAt: serverTimestamp(),
+    };
 
-  // The client will attempt to add the doc, and the firestore.rules will handle security.
-  // This server action is now primarily for things like sending emails or other side-effects,
-  // while the actual DB write is initiated on the client to leverage security rules.
-  // We return a success to let the client proceed.
-  return { success: true, bookingId: `mock_${Date.now()}` };
+    const docRef = await addDoc(bookingCollection, bookingDataWithTimestamp);
 
+    return { success: true, bookingId: docRef.id };
+    
+  } catch (error: any) {
+    console.error('Error submitting booking request:', error);
+    
+    // We can't use the client-side errorEmitter here in the same way,
+    // but we can return a structured error message.
+    // In a real app, you might log this to a more robust monitoring service.
+    
+    // A generic permission error for Firestore is often 'permission-denied'
+    if (error.code === 'permission-denied') {
+       return {
+        success: false,
+        error: 'Permission denied. You may not have the rights to create a booking for this venue.',
+      };
+    }
+
+    return { success: false, error: 'An unknown server error occurred.' };
+  }
 }
