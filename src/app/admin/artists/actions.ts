@@ -1,7 +1,7 @@
 
 'use server';
 
-import { initializeApp, getApps, App } from 'firebase/app';
+import { initializeApp, getApps, type FirebaseApp } from 'firebase/app';
 import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
 import { getFirestore, doc, setDoc } from 'firebase/firestore';
 import { ArtistProfile, User } from '@/lib/types';
@@ -10,7 +10,7 @@ import { firebaseConfig } from '@/firebase/config';
 // This is a temporary solution for server-side Firebase admin actions.
 // In a real-world scenario, you would use a more secure way to manage service accounts
 // and would not use client-side authentication logic on the server.
-const getApp = (): App => {
+const getApp = (): FirebaseApp => {
   if (getApps().length > 0) {
     return getApps()[0];
   }

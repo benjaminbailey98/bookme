@@ -1,14 +1,14 @@
 
 'use server';
 
-import { initializeApp, getApps, App } from 'firebase/app';
+import { initializeApp, getApps, type FirebaseApp } from 'firebase/app';
 import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
 import { getFirestore, doc, setDoc } from 'firebase/firestore';
 import { VenueProfile, User } from '@/lib/types';
 import { firebaseConfig } from '@/firebase/config';
 
 
-const getApp = (): App => {
+const getApp = (): FirebaseApp => {
   if (getApps().length > 0) {
     return getApps()[0];
   }
