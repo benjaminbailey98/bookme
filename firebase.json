@@ -2,7 +2,6 @@
 {
   "apphosting": {
     "backendId": "bookme",
-    "rootDir": "/",
     "ignore": [
       "node_modules",
       ".git",
