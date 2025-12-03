@@ -30,7 +30,7 @@ const profileFormSchema = z.object({
   personalEmail: z.string().email('A valid email is required to create an account.'),
   personalPhone: z.string().min(1, 'Phone number is required.'),
   password: z.string().min(8, 'Password must be at least 8 characters.'),
-  shortBio: z.string().max(500, 'Bio cannot exceed 500 characters.').optional(),
+  shortBio: z.string().max(500, 'Bio cannot exceed 500 characters.').default(''),
   websiteUrl: z.string().url().optional().or(z.literal('')),
   instagramUrl: z.string().url().optional().or(z.literal('')),
   facebookUrl: z.string().url().optional().or(z.literal('')),
