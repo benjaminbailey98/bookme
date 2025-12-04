@@ -1,4 +1,3 @@
-
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -7,7 +6,6 @@ import * as z from 'zod';
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -40,7 +38,6 @@ const profileFormSchema = z.object({
   managementContactPerson: z.string().optional(),
   managementEmail: z.string().email().optional().or(z.literal('')),
   managementPhone: z.string().optional(),
-  // Add missing optional fields to match ArtistProfile type
   artistProfilePictureUrl: z.string().url().optional().or(z.literal('')),
   artistPerformingVideoUrl: z.string().url().optional().or(z.literal('')),
   additionalLinks: z.array(z.object({ platform: z.string(), url: z.string() })).optional(),
@@ -89,6 +86,7 @@ export function ArtistForm({ artist, onSuccess }: ArtistFormProps) {
           title: 'Artist Created',
           description: `The profile for ${data.stageName} has been successfully created.`,
         });
+        form.reset();
         onSuccess?.();
       } else {
         toast({
@@ -105,7 +103,6 @@ export function ArtistForm({ artist, onSuccess }: ArtistFormProps) {
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <ScrollArea className="h-96 pr-6">
             <div className="space-y-6">
-                 {/* Account Creation */}
                 <div className="space-y-4 rounded-md border p-4">
                     <h3 className="text-lg font-medium">Account Credentials</h3>
                      <FormField
@@ -140,8 +137,6 @@ export function ArtistForm({ artist, onSuccess }: ArtistFormProps) {
                     />
                 </div>
 
-
-                {/* Personal Details */}
                  <div className="space-y-4">
                     <h3 className="text-lg font-medium">Personal Details</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -157,7 +152,6 @@ export function ArtistForm({ artist, onSuccess }: ArtistFormProps) {
                     </div>
                 </div>
 
-                {/* Public Profile */}
                  <div className="space-y-4">
                     <h3 className="text-lg font-medium">Public Profile</h3>
                     <FormField control={form.control} name="shortBio" render={({ field }) => (
@@ -165,7 +159,6 @@ export function ArtistForm({ artist, onSuccess }: ArtistFormProps) {
                     )}/>
                  </div>
 
-                {/* Social Media Links */}
                  <div className="space-y-4">
                     <h3 className="text-lg font-medium">Social Media & Links</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -177,7 +170,6 @@ export function ArtistForm({ artist, onSuccess }: ArtistFormProps) {
                     </div>
                  </div>
 
-                {/* Management Info */}
                  <div className="space-y-4">
                      <h3 className="text-lg font-medium">Management Information</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

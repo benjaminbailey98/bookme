@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -44,8 +43,6 @@ import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { Loader2, Star } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
 import { useState } from 'react';
 
 export default function ArtistBookingsPage() {
@@ -71,7 +68,6 @@ export default function ArtistBookingsPage() {
   const handleStatusChange = async (booking: BookingRequest, newStatus: 'confirmed' | 'declined' | 'completed') => {
     if (!firestore || !user) return;
     
-    // Path to the booking document is under the venue's profile
     const bookingDocRef = doc(firestore, 'venue_profiles', booking.venueProfileId, 'booking_requests', booking.id);
 
     try {
@@ -80,13 +76,12 @@ export default function ArtistBookingsPage() {
         title: `Booking ${newStatus}`,
         description: `The request from ${booking.venueName} has been ${newStatus}.`,
       });
-    } catch (serverError) {
-       const permissionError = new FirestorePermissionError({
-        path: bookingDocRef.path,
-        operation: 'update',
-        requestResourceData: { status: newStatus },
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Update Failed',
+        description: 'Could not update booking status.',
       });
-      errorEmitter.emit('permission-error', permissionError);
     }
   };
 
@@ -104,7 +99,7 @@ export default function ArtistBookingsPage() {
     const reviewData: Omit<Review, 'id' | 'createdAt'> = {
       bookingRequestId: selectedBooking.id,
       reviewerId: user.uid,
-      revieweeId: selectedBooking.venueProfileId, // Artist reviews the venue
+      revieweeId: selectedBooking.venueProfileId, // Artist reviews the venue owner's user ID
       reviewerRole: 'artist',
       rating,
       reviewText: review,
@@ -118,13 +113,12 @@ export default function ArtistBookingsPage() {
       setSelectedBooking(null); 
       setRating(0);
       setReview('');
-    } catch (serverError) {
-       const permissionError = new FirestorePermissionError({
-        path: 'reviews',
-        operation: 'create',
-        requestResourceData: reviewData,
+    } catch (error) {
+       toast({
+        variant: 'destructive',
+        title: 'Submission Failed',
+        description: 'Could not submit your review.',
       });
-      errorEmitter.emit('permission-error', permissionError);
     } finally {
         setIsSubmitting(false);
     }

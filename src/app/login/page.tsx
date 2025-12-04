@@ -60,6 +60,7 @@ function LoginPageContent() {
       });
       const redirectUrl = searchParams.get('redirect') || '/';
       router.push(redirectUrl);
+      router.refresh(); // Force a refresh to update header state
     } catch (error: any) {
       console.error('Login error:', error);
       let description = 'An unexpected error occurred during login.';

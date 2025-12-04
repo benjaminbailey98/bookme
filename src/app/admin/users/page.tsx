@@ -1,4 +1,3 @@
-
 'use client';
 
 import { collection, doc, updateDoc, query } from 'firebase/firestore';
@@ -29,12 +28,9 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, MoreHorizontal, ShieldAlert } from 'lucide-react';
+import { Loader2, MoreHorizontal } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { errorEmitter } from '@/firebase/error-emitter';
 import { useUserProfile } from '@/hooks/use-user-profile';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useState } from 'react';
 
 export default function AdminUsersPage() {
@@ -44,13 +40,11 @@ export default function AdminUsersPage() {
   const [isUpdatingRole, setIsUpdatingRole] = useState(false);
 
   const usersQuery = useMemoFirebase(() => {
-    if (!firestore || !currentUser) return null;
-    // Only attempt to query if we think we might be an admin.
-    // The UI will handle the permission error if we are not.
+    if (!firestore || !currentUser?.isAdmin) return null;
     return query(collection(firestore, 'users'));
-  }, [firestore, currentUser]);
+  }, [firestore, currentUser?.isAdmin]);
 
-  const { data: users, isLoading, error } = useCollection<User>(usersQuery);
+  const { data: users, isLoading } = useCollection<User>(usersQuery);
 
   const handleRoleChange = async (
     userId: string,
@@ -76,24 +70,21 @@ export default function AdminUsersPage() {
       roleDescription = value ? 'Admin' : 'Regular User';
     }
 
-    updateDoc(userDocRef, { [field]: value })
-      .then(() => {
-        toast({
-          title: 'Role Updated',
-          description: `User role has been successfully changed to ${roleDescription}.`,
-        });
-      })
-      .catch((serverError) => {
-        const permissionError = new FirestorePermissionError({
-          path: userDocRef.path,
-          operation: 'update',
-          requestResourceData: { [field]: value },
-        });
-        errorEmitter.emit('permission-error', permissionError);
-      })
-      .finally(() => {
-        setIsUpdatingRole(false);
+    try {
+      await updateDoc(userDocRef, { [field]: value });
+      toast({
+        title: 'Role Updated',
+        description: `User role has been successfully changed to ${roleDescription}.`,
       });
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Update Failed',
+        description: `Could not update user role. You may not have permission.`,
+      });
+    } finally {
+      setIsUpdatingRole(false);
+    }
   };
 
   const renderContent = () => {
@@ -107,33 +98,6 @@ export default function AdminUsersPage() {
       );
     }
     
-    // This is the key change: explicitly check for a permission error.
-    // If we get a permission error trying to list users, it's because this user is not an admin.
-    if (error && currentUser) {
-         return (
-             <TableRow>
-              <TableCell colSpan={6}>
-                 <Alert>
-                    <ShieldAlert className="h-4 w-4" />
-                    <AlertTitle>Become the First Admin</AlertTitle>
-                    <AlertDescription>
-                      To manage users, you first need to grant yourself administrator privileges.
-                       <Button 
-                          size="sm" 
-                          className="ml-4"
-                          disabled={isUpdatingRole}
-                          onClick={() => handleRoleChange(currentUser.uid, 'isAdmin', true)}
-                        >
-                          {isUpdatingRole && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                          Make Me Admin
-                        </Button>
-                    </AlertDescription>
-                  </Alert>
-              </TableCell>
-             </TableRow>
-         )
-    }
-
     if (!users || users.length === 0) {
       return (
         <TableRow>
@@ -206,7 +170,7 @@ export default function AdminUsersPage() {
                 onClick={() =>
                   handleRoleChange(user.id, 'isAdmin', false)
                 }
-                disabled={user.isAdmin !== true || isUpdatingRole}
+                disabled={user.isAdmin !== true || isUpdatingRole || user.id === currentUser?.uid}
               >
                 Remove Admin
               </DropdownMenuItem>

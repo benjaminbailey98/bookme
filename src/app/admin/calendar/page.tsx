@@ -1,10 +1,8 @@
-
 'use client';
 
 import { useMemo, useState } from 'react';
 import { collectionGroup, query, where, collection } from 'firebase/firestore';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { useUserProfile } from '@/hooks/use-user-profile';
 import type { BookingRequest, ArtistAvailability, ArtistProfile } from '@/lib/types';
 import {
   Card,
@@ -24,34 +22,29 @@ import { Badge } from '@/components/ui/badge';
 export default function AdminCalendarPage() {
   const firestore = useFirestore();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const { user: currentUser } = useUserProfile();
-  const isUserAdmin = currentUser?.isAdmin;
 
-  // 1. Fetch confirmed bookings for the event calendar
   const confirmedBookingsQuery = useMemoFirebase(() => {
-    if (!firestore || !isUserAdmin) return null;
+    if (!firestore) return null;
     return query(
       collectionGroup(firestore, 'booking_requests'),
       where('status', '==', 'confirmed')
     );
-  }, [firestore, isUserAdmin]);
+  }, [firestore]);
 
   const { data: bookings, isLoading: bookingsLoading } =
     useCollection<BookingRequest>(confirmedBookingsQuery);
   
 
-  // 2. Fetch all artist profiles
   const artistsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
     return query(collection(firestore, 'artist_profiles'));
   }, [firestore]);
   const { data: artists, isLoading: artistsLoading } = useCollection<ArtistProfile>(artistsQuery);
 
-  // 3. Fetch all availability data
   const availabilityQuery = useMemoFirebase(() => {
-    if (!firestore || !isUserAdmin) return null;
+    if (!firestore) return null;
     return query(collectionGroup(firestore, 'availability'));
-  }, [firestore, isUserAdmin]);
+  }, [firestore]);
   const { data: allAvailability, isLoading: availabilityLoading } = useCollection<ArtistAvailability>(availabilityQuery);
   
 
@@ -65,7 +58,6 @@ export default function AdminCalendarPage() {
     }));
   }, [bookings, artists]);
 
-  // 4. Process availability for the selected date
   const { available, unavailable } = useMemo(() => {
     if (!artists || !allAvailability) return { available: [], unavailable: [] };
 
@@ -93,7 +85,7 @@ export default function AdminCalendarPage() {
   }, [artists, allAvailability, selectedDate]);
 
 
-  const isLoading = (bookingsLoading || availabilityLoading || artistsLoading) && isUserAdmin;
+  const isLoading = bookingsLoading || availabilityLoading || artistsLoading;
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
@@ -101,103 +93,89 @@ export default function AdminCalendarPage() {
         <h2 className="text-3xl font-bold tracking-tight">Master Calendar</h2>
       </div>
 
-      { isUserAdmin ? (
-        <>
-            <Card>
-                <CardHeader>
-                <CardTitle>All Confirmed Bookings</CardTitle>
-                <CardDescription>
-                    A master calendar view of all confirmed events on the platform. (Admin access required)
-                </CardDescription>
-                </CardHeader>
-                <CardContent>
-                {isLoading ? (
-                    <div className="flex justify-center items-center h-96">
-                    <Loader2 className="mx-auto h-8 w-8 animate-spin text-muted-foreground" />
-                    </div>
-                ) : (
-                    <EventCalendar events={calendarEvents} />
-                )}
-                </CardContent>
-            </Card>
+      <Card>
+          <CardHeader>
+          <CardTitle>All Confirmed Bookings</CardTitle>
+          <CardDescription>
+              A master calendar view of all confirmed events on the platform.
+          </CardDescription>
+          </CardHeader>
+          <CardContent>
+          {isLoading ? (
+              <div className="flex justify-center items-center h-96">
+              <Loader2 className="mx-auto h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
+          ) : (
+              <EventCalendar events={calendarEvents} />
+          )}
+          </CardContent>
+      </Card>
 
-            <Card>
-                <CardHeader>
-                <CardTitle>Artist Availability Checker</CardTitle>
-                <CardDescription>
-                    Select a date to see which artists are available or unavailable. (Admin access required)
-                </CardDescription>
-                </CardHeader>
-                <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    <div className="flex justify-center items-center">
-                        <Calendar
-                            mode="single"
-                            selected={selectedDate}
-                            onSelect={(date) => date && setSelectedDate(date)}
-                            className="rounded-md border"
-                        />
-                    </div>
-                    <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-6">
-                        <div>
-                            <h3 className="font-semibold mb-2">Unavailable Artists ({unavailable.length})</h3>
-                            <ScrollArea className="h-72 rounded-md border p-2">
-                                {artistsLoading || availabilityLoading ? <div className="flex justify-center items-center h-full"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div> :
-                                unavailable.length > 0 ? (
-                                    <ul className="space-y-2">
-                                        {unavailable.map(artist => (
-                                            <li key={artist.id} className="flex items-center justify-between gap-3 p-2 rounded-md bg-muted/50">
-                                                <div className="flex items-center gap-3">
-                                                    <Avatar className="h-8 w-8">
-                                                        <AvatarImage src={artist.artistProfilePictureUrl} />
-                                                        <AvatarFallback>{artist.stageName.charAt(0)}</AvatarFallback>
-                                                    </Avatar>
-                                                    <span className="text-sm font-medium">{artist.stageName}</span>
-                                                </div>
-                                                <Badge variant="secondary">{artist.unavailabilityReason}</Badge>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                ) : (
-                                    <p className="text-sm text-muted-foreground text-center pt-4">No artists are unavailable on {format(selectedDate, 'PPP')}.</p>
-                                )}
-                            </ScrollArea>
-                        </div>
-                        <div>
-                            <h3 className="font-semibold mb-2">Available Artists ({available.length})</h3>
-                            <ScrollArea className="h-72 rounded-md border p-2">
-                                {artistsLoading ? <div className="flex justify-center items-center h-full"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div> :
-                                available.length > 0 ? (
-                                    <ul className="space-y-2">
-                                        {available.map(artist => (
-                                            <li key={artist.id} className="flex items-center gap-3 p-2 rounded-md">
-                                                <Avatar className="h-8 w-8">
-                                                    <AvatarImage src={artist.artistProfilePictureUrl} />
-                                                    <AvatarFallback>{artist.stageName.charAt(0)}</AvatarFallback>
-                                                </Avatar>
-                                                <span className="text-sm font-medium">{artist.stageName}</span>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                ) : (
-                                    <p className="text-sm text-muted-foreground text-center pt-4">No artists available.</p>
-                                )}
-                            </ScrollArea>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
-        </>
-      ) : (
-        <Card>
-            <CardHeader>
-                <CardTitle>Admin Access Required</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <p className="text-muted-foreground">You do not have permission to view the master calendar. Please contact an administrator.</p>
-            </CardContent>
-        </Card>
-      )}
-
+      <Card>
+          <CardHeader>
+          <CardTitle>Artist Availability Checker</CardTitle>
+          <CardDescription>
+              Select a date to see which artists are available or unavailable.
+          </CardDescription>
+          </CardHeader>
+          <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="flex justify-center items-center">
+                  <Calendar
+                      mode="single"
+                      selected={selectedDate}
+                      onSelect={(date) => date && setSelectedDate(date)}
+                      className="rounded-md border"
+                  />
+              </div>
+              <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  <div>
+                      <h3 className="font-semibold mb-2">Unavailable Artists ({unavailable.length})</h3>
+                      <ScrollArea className="h-72 rounded-md border p-2">
+                          {artistsLoading || availabilityLoading ? <div className="flex justify-center items-center h-full"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div> :
+                          unavailable.length > 0 ? (
+                              <ul className="space-y-2">
+                                  {unavailable.map(artist => (
+                                      <li key={artist.id} className="flex items-center justify-between gap-3 p-2 rounded-md bg-muted/50">
+                                          <div className="flex items-center gap-3">
+                                              <Avatar className="h-8 w-8">
+                                                  <AvatarImage src={artist.artistProfilePictureUrl} />
+                                                  <AvatarFallback>{artist.stageName.charAt(0)}</AvatarFallback>
+                                              </Avatar>
+                                              <span className="text-sm font-medium">{artist.stageName}</span>
+                                          </div>
+                                          <Badge variant="secondary">{artist.unavailabilityReason}</Badge>
+                                      </li>
+                                  ))}
+                              </ul>
+                          ) : (
+                              <p className="text-sm text-muted-foreground text-center pt-4">No artists are unavailable on {format(selectedDate, 'PPP')}.</p>
+                          )}
+                      </ScrollArea>
+                  </div>
+                  <div>
+                      <h3 className="font-semibold mb-2">Available Artists ({available.length})</h3>
+                      <ScrollArea className="h-72 rounded-md border p-2">
+                          {artistsLoading ? <div className="flex justify-center items-center h-full"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div> :
+                          available.length > 0 ? (
+                              <ul className="space-y-2">
+                                  {available.map(artist => (
+                                      <li key={artist.id} className="flex items-center gap-3 p-2 rounded-md">
+                                          <Avatar className="h-8 w-8">
+                                              <AvatarImage src={artist.artistProfilePictureUrl} />
+                                              <AvatarFallback>{artist.stageName.charAt(0)}</AvatarFallback>
+                                          </Avatar>
+                                          <span className="text-sm font-medium">{artist.stageName}</span>
+                                      </li>
+                                  ))}
+                              </ul>
+                          ) : (
+                              <p className="text-sm text-muted-foreground text-center pt-4">No artists available.</p>
+                          )}
+                      </ScrollArea>
+                  </div>
+              </div>
+          </CardContent>
+      </Card>
     </div>
   );
 }

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -27,7 +26,7 @@ import { useAuth, useFirestore, useCollection, useMemoFirebase } from '@/firebas
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
-import { doc, setDoc, writeBatch, collection, query, where, limit } from 'firebase/firestore';
+import { doc, setDoc, collection, query, where, limit } from 'firebase/firestore';
 import type { User } from '@/lib/types';
 import { useEffect } from 'react';
 
@@ -137,7 +136,6 @@ export default function AdminRegistrationPage() {
         );
     }
     
-    // Don't render the form if an admin already exists and we're just waiting for redirect
     if (admins && admins.length > 0) {
         return (
              <div className="flex h-screen items-center justify-center">
@@ -208,4 +206,3 @@ export default function AdminRegistrationPage() {
     </div>
   );
 }
-

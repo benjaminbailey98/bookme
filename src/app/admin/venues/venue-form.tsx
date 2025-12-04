@@ -1,4 +1,3 @@
-
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -7,7 +6,6 @@ import * as z from 'zod';
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -75,6 +73,7 @@ export function VenueForm({ venue, onSuccess }: VenueFormProps) {
           title: 'Venue Created',
           description: `The profile for ${data.companyName} has been successfully created.`,
         });
+        form.reset();
         onSuccess?.();
       } else {
         toast({
@@ -91,7 +90,6 @@ export function VenueForm({ venue, onSuccess }: VenueFormProps) {
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <ScrollArea className="h-96 pr-6">
           <div className="space-y-6">
-            {/* Account Creation */}
             <div className="space-y-4 rounded-md border p-4">
               <h3 className="text-lg font-medium">Account Credentials</h3>
               <FormField
@@ -126,7 +124,6 @@ export function VenueForm({ venue, onSuccess }: VenueFormProps) {
               />
             </div>
 
-            {/* Company Details */}
             <div className="space-y-4">
               <h3 className="text-lg font-medium">Company Details</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -185,7 +182,6 @@ export function VenueForm({ venue, onSuccess }: VenueFormProps) {
                 />
             </div>
             
-            {/* Contact Person Details */}
             <div className="space-y-4">
               <h3 className="text-lg font-medium">Primary Contact</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

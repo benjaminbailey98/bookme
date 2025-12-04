@@ -51,8 +51,9 @@ import { useEffect, useMemo, useTransition } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query } from 'firebase/firestore';
-import type { ArtistProfile, ArtistAvailability, BookingRequest } from '@/lib/types';
+import type { ArtistProfile, ArtistAvailability } from '@/lib/types';
 import { submitBookingRequest } from './actions';
+import { useUserProfile } from '@/hooks/use-user-profile';
 
 const bookingFormSchema = z.object({
   eventDate: z.date({
@@ -127,7 +128,7 @@ const TooltipWrapper = ({
 
 export function BookingForm() {
   const { toast } = useToast();
-  const { user } = useUser();
+  const { user } = useUserProfile();
   const firestore = useFirestore();
   const [isSubmitPending, startSubmitTransition] = useTransition();
   const router = useRouter();
@@ -171,7 +172,6 @@ export function BookingForm() {
     if (artistId) {
       form.setValue('artistProfileId', artistId);
     }
-    // If a venue user is logged in, use their ID for submission
     if(user && user.isVenue) {
       form.setValue('venueName', user.displayName || '');
     }
@@ -181,8 +181,7 @@ export function BookingForm() {
   const isTicketed = form.watch('isTicketedEvent');
 
   function onSubmit(data: BookingFormValues) {
-    // A one-time booker might not be logged in. A venue user would be.
-    const venueProfileId = user?.uid || 'one-time-booking'; // Fallback for one-time bookers
+    const venueProfileId = user?.uid || 'one-time-booking'; // Fallback for non-logged-in users
     
     startSubmitTransition(async () => {
       const parsedData = {
@@ -200,7 +199,7 @@ export function BookingForm() {
                 'Your request has been sent. Please allow 24-48 hours for a response.',
         });
         form.reset();
-        if (user) {
+        if (user && user.isVenue) {
             router.push('/venues/portal/bookings');
         }
       } else {

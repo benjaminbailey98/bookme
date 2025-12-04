@@ -1,5 +1,3 @@
-
-
 import type { Timestamp } from 'firebase/firestore';
 
 export type ImagePlaceholder = {
@@ -112,5 +110,3 @@ export interface Review {
     reviewText?: string;
     createdAt: Timestamp;
 }
-
-    

@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -28,11 +27,11 @@ import {
   Loader2,
 } from 'lucide-react';
 import { Icons } from '@/components/icons';
-import { useAuth, useUser } from '@/firebase';
+import { useAuth } from '@/firebase';
+import { useUserProfile } from '@/hooks/use-user-profile';
 import { signOut } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -54,13 +53,11 @@ export default function AdminPortalLayout({
   children: React.ReactNode;
 }) {
   const auth = useAuth();
-  const { user, isUserLoading } = useUser();
+  const { user, isUserLoading } = useUserProfile();
   const { toast } = useToast();
   const pathname = usePathname();
   const router = useRouter();
 
-  // Special case: If no admin exists yet, the /admin/register page should be accessible.
-  // This page has its own logic to check for admin existence.
   if (pathname === '/admin/register') {
     return <main className="flex-1">{children}</main>;
   }
@@ -92,7 +89,7 @@ export default function AdminPortalLayout({
     );
   }
 
-  if (!user) {
+  if (!user || !user.isAdmin) {
     return (
       <div className="container flex h-screen items-center justify-center">
         <Card className="w-full max-w-md text-center">
@@ -101,14 +98,14 @@ export default function AdminPortalLayout({
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-muted-foreground">
-              You must be logged in to access the admin portal. If no admin account exists, please go to the registration page.
+              You must be an administrator to access this portal.
             </p>
             <div className="flex flex-col space-y-2">
               <Button asChild>
-                <Link href="/login?redirect=/admin">Login</Link>
+                <Link href="/login?redirect=/admin">Login as Admin</Link>
               </Button>
               <Button asChild variant="outline">
-                <Link href="/admin/register">Register First Admin</Link>
+                <Link href="/">Return to Home</Link>
               </Button>
             </div>
           </CardContent>

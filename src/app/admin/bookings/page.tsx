@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -6,8 +5,6 @@ import {
   query,
   doc,
   updateDoc,
-  getDocs,
-  where,
 } from 'firebase/firestore';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { useUserProfile } from '@/hooks/use-user-profile';
@@ -42,8 +39,6 @@ import { format } from 'date-fns';
 import { useMemo } from 'react';
 import { collection } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
 import Link from 'next/link';
 
 export default function AdminBookingsPage() {
@@ -61,9 +56,9 @@ export default function AdminBookingsPage() {
     useCollection<BookingRequest>(bookingsQuery);
 
   const artistsQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
+    if (!firestore || !isUserAdmin) return null;
     return query(collection(firestore, 'artist_profiles'));
-  }, [firestore]);
+  }, [firestore, isUserAdmin]);
 
   const { data: artists, isLoading: artistsLoading } =
     useCollection<ArtistProfile>(artistsQuery);
@@ -104,23 +99,21 @@ export default function AdminBookingsPage() {
       booking.id
     );
 
-    updateDoc(bookingDocRef, { status: newStatus })
-      .then(() => {
-        toast({
-          title: 'Booking Status Updated',
-          description: `Booking for ${
-            artistMap.get(booking.artistProfileId) || 'artist'
-          } at ${booking.venueName} is now ${newStatus}.`,
-        });
-      })
-      .catch((serverError: any) => {
-        const permissionError = new FirestorePermissionError({
-          path: bookingDocRef.path,
-          operation: 'update',
-          requestResourceData: { status: newStatus },
-        });
-        errorEmitter.emit('permission-error', permissionError);
+    try {
+      await updateDoc(bookingDocRef, { status: newStatus });
+      toast({
+        title: 'Booking Status Updated',
+        description: `Booking for ${
+          artistMap.get(booking.artistProfileId) || 'artist'
+        } at ${booking.venueName} is now ${newStatus}.`,
       });
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Update Failed',
+        description: 'Could not update booking status.',
+      });
+    }
   };
 
   return (
@@ -137,7 +130,7 @@ export default function AdminBookingsPage() {
         <CardHeader>
           <CardTitle>All Bookings</CardTitle>
           <CardDescription>
-            A comprehensive list of all bookings submitted on the platform. (Admin access required)
+            A comprehensive list of all bookings submitted on the platform.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -152,13 +145,13 @@ export default function AdminBookingsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading && isUserAdmin ? (
+              {isLoading ? (
                 <TableRow>
                   <TableCell colSpan={5} className="h-24 text-center">
                     <Loader2 className="mx-auto h-8 w-8 animate-spin text-muted-foreground" />
                   </TableCell>
                 </TableRow>
-              ) : !isLoading && bookings && bookings.length > 0 && isUserAdmin ? (
+              ) : bookings && bookings.length > 0 ? (
                 bookings.map((booking) => (
                   <TableRow key={booking.id}>
                     <TableCell className="font-medium">
@@ -232,7 +225,7 @@ export default function AdminBookingsPage() {
                       colSpan={5}
                       className="h-24 text-center text-muted-foreground"
                     >
-                      {isUserAdmin ? "No bookings found." : "Insufficient permissions to view all bookings."}
+                      No bookings found.
                     </TableCell>
                   </TableRow>
               )}

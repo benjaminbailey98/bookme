@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useParams } from 'next/navigation';
@@ -14,7 +13,6 @@ import {
   Music,
   Globe,
   Loader2,
-  ListMusic,
   Link as LinkIcon,
 } from 'lucide-react';
 import Link from 'next/link';

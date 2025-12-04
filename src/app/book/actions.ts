@@ -19,8 +19,6 @@ export async function submitBookingRequest(
   try {
     const { firestore } = initializeFirebase();
 
-    // The venueProfileId might be a real user ID or a placeholder for one-time bookers.
-    // If it's a real user, we fetch their profile to get the owner ID for security rules.
     let venueOwnerId: string | undefined = undefined;
     if (venueProfileId !== 'one-time-booking') {
         const venueProfileRef = doc(firestore, 'venue_profiles', venueProfileId);
@@ -40,9 +38,9 @@ export async function submitBookingRequest(
     const bookingRequestData: Omit<BookingRequest, 'id'> = {
       ...data,
       eventDate: Timestamp.fromDate(data.eventDate),
-      status: 'pending', // Initial status
-      venueProfileId: venueProfileId, // Ensure this is set
-      venueOwnerId: venueOwnerId, // Set for security rules if available
+      status: 'pending',
+      venueProfileId: venueProfileId,
+      venueOwnerId: venueOwnerId, 
     };
 
     await addDoc(bookingCollectionRef, bookingRequestData);

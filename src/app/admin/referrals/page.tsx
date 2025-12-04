@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo } from 'react';
@@ -58,7 +57,7 @@ export default function AdminReferralsPage() {
         <CardHeader>
           <CardTitle>All Referrals</CardTitle>
           <CardDescription>
-            A list of all user referrals made on the platform. (Admin access required)
+            A list of all user referrals made on the platform.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -77,7 +76,7 @@ export default function AdminReferralsPage() {
                     <Loader2 className="mx-auto h-8 w-8 animate-spin text-muted-foreground" />
                   </TableCell>
                 </TableRow>
-              ) : !isLoading && referrals && referrals.length > 0 && isUserAdmin ? (
+              ) : referrals && referrals.length > 0 ? (
                 referrals.map((referral) => (
                   <TableRow key={referral.id}>
                     <TableCell>
@@ -99,7 +98,7 @@ export default function AdminReferralsPage() {
                     colSpan={3}
                     className="h-24 text-center text-muted-foreground"
                   >
-                    {isUserAdmin ? 'No referrals found.' : 'Insufficient permissions to view referrals.'}
+                    No referrals found.
                   </TableCell>
                 </TableRow>
               )}

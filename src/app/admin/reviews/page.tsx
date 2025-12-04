@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo } from 'react';
@@ -83,7 +82,7 @@ export default function AdminReviewsPage() {
         <CardHeader>
           <CardTitle>All User Reviews</CardTitle>
           <CardDescription>
-            A list of all reviews submitted by artists and venues. (Admin access required)
+            A list of all reviews submitted by artists and venues.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -104,7 +103,7 @@ export default function AdminReviewsPage() {
                     <Loader2 className="mx-auto h-8 w-8 animate-spin text-muted-foreground" />
                   </TableCell>
                 </TableRow>
-              ) : !isLoading && reviews && reviews.length > 0 && isUserAdmin ? (
+              ) : reviews && reviews.length > 0 ? (
                 reviews.map((review) => (
                   <TableRow key={review.id}>
                     <TableCell>
@@ -136,7 +135,7 @@ export default function AdminReviewsPage() {
                       colSpan={5}
                       className="h-24 text-center text-muted-foreground"
                     >
-                       {isUserAdmin ? "No reviews found." : "Insufficient permissions to view reviews."}
+                       No reviews found.
                     </TableCell>
                   </TableRow>
               )}

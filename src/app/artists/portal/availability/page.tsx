@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import {
   collection,
   addDoc,
@@ -22,8 +22,6 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { format, isSameDay, parseISO } from 'date-fns';
 import { PlusCircle, Trash2, XCircle } from 'lucide-react';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { errorEmitter } from '@/firebase/error-emitter';
 
 export default function ArtistAvailabilityPage() {
   const { toast } = useToast();
@@ -46,21 +44,20 @@ export default function ArtistAvailabilityPage() {
   const { data: availabilityData, isLoading } = useCollection<ArtistAvailability>(availabilityQuery);
 
   const unavailableDates =
-    availabilityData?.map((a) => new Date(a.unavailableDate)) || [];
+    availabilityData?.map((a) => parseISO(a.unavailableDate)) || [];
     
   const sortedUnavailableDates = availabilityData
-    ? [...availabilityData].sort((a, b) => new Date(a.unavailableDate).getTime() - new Date(b.unavailableDate).getTime())
+    ? [...availabilityData].sort((a, b) => parseISO(a.unavailableDate).getTime() - parseISO(b.unavailableDate).getTime())
     : [];
 
   const handleDateSelect = (date: Date | undefined) => {
     if (!date) return;
     setSelectedDate(date);
     
-    const existingForDate = availabilityData?.find(a => isSameDay(new Date(a.unavailableDate), date));
+    const existingForDate = availabilityData?.find(a => isSameDay(parseISO(a.unavailableDate), date));
     if (existingForDate) {
       setIsAllDay(existingForDate.isAllDay || false);
       if (existingForDate.unavailableStartTime && existingForDate.unavailableEndTime) {
-         // This is simplified. A real app might have multiple entries per day.
          setTimeRanges([{ from: existingForDate.unavailableStartTime, to: existingForDate.unavailableEndTime }]);
       } else {
          setTimeRanges([{ from: '', to: '' }]);
@@ -102,87 +99,89 @@ export default function ArtistAvailabilityPage() {
 
     const formattedDate = format(selectedDate, 'yyyy-MM-dd');
   
-    // First, clear existing availability for the selected date
-    const q = query(collection(firestore, 'artist_profiles', user.uid, 'availability'), where("unavailableDate", "==", formattedDate));
-    const querySnapshot = await getDocs(q);
-    const batch = writeBatch(firestore);
-    querySnapshot.forEach(doc => {
-        batch.delete(doc.ref);
-    });
+    try {
+      const q = query(collection(firestore, 'artist_profiles', user.uid, 'availability'), where("unavailableDate", "==", formattedDate));
+      const querySnapshot = await getDocs(q);
+      const batch = writeBatch(firestore);
+      querySnapshot.forEach(doc => {
+          batch.delete(doc.ref);
+      });
 
-    const baseData = {
-      artistProfileId: user.uid,
-      unavailableDate: formattedDate,
-    };
+      const baseData = {
+        artistProfileId: user.uid,
+        unavailableDate: formattedDate,
+      };
 
-    if (isAllDay) {
-        const newEntry = { ...baseData, isAllDay: true };
-        const docRef = doc(collection(firestore, 'artist_profiles', user.uid, 'availability'));
-        batch.set(docRef, newEntry);
+      if (isAllDay) {
+          const newEntry = { ...baseData, isAllDay: true };
+          const docRef = doc(collection(firestore, 'artist_profiles', user.uid, 'availability'));
+          batch.set(docRef, newEntry);
+      } else {
+          for (const range of timeRanges) {
+              if (range.from && range.to) {
+                  const newEntry = {
+                      ...baseData,
+                      isAllDay: false,
+                      unavailableStartTime: range.from,
+                      unavailableEndTime: range.to,
+                  };
+                  const docRef = doc(collection(firestore, 'artist_profiles', user.uid, 'availability'));
+                  batch.set(docRef, newEntry);
+              }
+          }
+      }
 
-    } else {
-        for (const range of timeRanges) {
-            if (range.from && range.to) {
-                const newEntry = {
-                    ...baseData,
-                    isAllDay: false,
-                    unavailableStartTime: range.from,
-                    unavailableEndTime: range.to,
-                };
-                const docRef = doc(collection(firestore, 'artist_profiles', user.uid, 'availability'));
-                batch.set(docRef, newEntry);
-            }
-        }
-    }
-
-    batch.commit().then(() => {
-        toast({
-            title: 'Availability Saved',
-            description: `Your schedule for ${format(
-              selectedDate,
-              'PPP'
-            )} has been updated.`,
-          });
-    }).catch(serverError => {
-        const permissionError = new FirestorePermissionError({
-            path: `artist_profiles/${user.uid}/availability`,
-            operation: 'write',
+      await batch.commit();
+      toast({
+          title: 'Availability Saved',
+          description: `Your schedule for ${format(
+            selectedDate,
+            'PPP'
+          )} has been updated.`,
         });
-        errorEmitter.emit('permission-error', permissionError);
-    })
+
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Save Failed',
+        description: 'Could not save your availability.',
+      });
+    }
   };
 
   const handleClearAvailabilityForDay = async () => {
      if (!user || !firestore || !selectedDate) return;
       const formattedDate = format(selectedDate, 'yyyy-MM-dd');
-      const q = query(collection(firestore, 'artist_profiles', user.uid, 'availability'), where("unavailableDate", "==", formattedDate));
-      const querySnapshot = await getDocs(q);
       
-      if (querySnapshot.empty) {
-        toast({ title: "You are already available on this day."});
-        return;
-      }
-      
-      const batch = writeBatch(firestore);
-      querySnapshot.forEach((doc) => {
-        batch.delete(doc.ref);
-      });
+      try {
+        const q = query(collection(firestore, 'artist_profiles', user.uid, 'availability'), where("unavailableDate", "==", formattedDate));
+        const querySnapshot = await getDocs(q);
+        
+        if (querySnapshot.empty) {
+          toast({ title: "You are already available on this day."});
+          return;
+        }
+        
+        const batch = writeBatch(firestore);
+        querySnapshot.forEach((doc) => {
+          batch.delete(doc.ref);
+        });
 
-      await batch.commit().then(() => {
-          toast({
-              title: "Availability Cleared",
-              description: `You are now marked as available for ${format(selectedDate, 'PPP')}.`,
-              variant: "default"
-          });
-          setIsAllDay(false);
-          setTimeRanges([{ from: '', to: '' }]);
-      }).catch(serverError => {
-           const permissionError = new FirestorePermissionError({
-                path: `artist_profiles/${user.uid}/availability`,
-                operation: 'delete',
-            });
-            errorEmitter.emit('permission-error', permissionError);
-      });
+        await batch.commit();
+        toast({
+            title: "Availability Cleared",
+            description: `You are now marked as available for ${format(selectedDate, 'PPP')}.`,
+            variant: "default"
+        });
+        setIsAllDay(false);
+        setTimeRanges([{ from: '', to: '' }]);
+      } catch (error) {
+        toast({
+          variant: 'destructive',
+          title: 'Clear Failed',
+          description: 'Could not clear your availability.',
+        });
+      }
   }
 
 
@@ -203,9 +202,6 @@ export default function ArtistAvailabilityPage() {
           <Calendar
             mode="multiple"
             selected={unavailableDates}
-            onSelect={(dates) => {
-              // This component is for display only, selection logic is handled by onDayClick
-            }}
             onDayClick={handleDateSelect}
             className="p-0"
             numberOfMonths={2}

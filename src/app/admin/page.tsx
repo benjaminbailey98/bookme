@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useCollection, useMemoFirebase } from '@/firebase';
@@ -24,14 +23,14 @@ export default function AdminDashboardPage() {
   }, [firestore, isUserAdmin]);
 
   const artistsQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
+    if (!firestore || !isUserAdmin) return null;
     return query(collection(firestore, 'artist_profiles'));
-  }, [firestore]);
+  }, [firestore, isUserAdmin]);
 
   const venuesQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
+    if (!firestore || !isUserAdmin) return null;
     return query(collection(firestore, 'venue_profiles'));
-  }, [firestore]);
+  }, [firestore, isUserAdmin]);
   
   const bookingsQuery = useMemoFirebase(() => {
     if (!firestore || !isUserAdmin) return null;
@@ -73,51 +72,39 @@ export default function AdminDashboardPage() {
       <div className="flex items-center justify-between space-y-2">
         <h2 className="text-3xl font-bold tracking-tight">Admin Dashboard</h2>
       </div>
-      { isUserAdmin ? (
-        <>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-            {stats.map((stat) => (
-              <Card key={stat.title}>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
-                  <stat.icon className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{stat.value}</div>
-                  <p className="text-xs text-muted-foreground">{stat.change}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-            <Card className="col-span-4">
-              <CardHeader>
-                <CardTitle>Recent Activity</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p>Recent activity feed coming soon.</p>
-              </CardContent>
-            </Card>
-            <Card className="col-span-3">
-              <CardHeader>
-                <CardTitle>Platform Growth</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p>Analytics chart coming soon.</p>
-              </CardContent>
-            </Card>
-          </div>
-        </>
-      ) : (
-        <Card>
-            <CardHeader>
-                <CardTitle>Welcome to the Admin Portal</CardTitle>
+      
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+        {stats.map((stat) => (
+          <Card key={stat.title}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
+              <stat.icon className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-                <p className="text-muted-foreground">This area is restricted. Please grant your user account admin privileges from the 'Manage Users' page to view dashboard statistics and manage the platform.</p>
+              <div className="text-2xl font-bold">{stat.value}</div>
+              <p className="text-xs text-muted-foreground">{stat.change}</p>
             </CardContent>
+          </Card>
+        ))}
+      </div>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+        <Card className="col-span-4">
+          <CardHeader>
+            <CardTitle>Recent Activity</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p>Recent activity feed coming soon.</p>
+          </CardContent>
         </Card>
-      )}
+        <Card className="col-span-3">
+          <CardHeader>
+            <CardTitle>Platform Growth</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p>Analytics chart coming soon.</p>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

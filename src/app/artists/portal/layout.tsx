@@ -1,11 +1,8 @@
-
 'use client';
 
 import {
   Sidebar,
   SidebarProvider,
-  SidebarTrigger,
-  SidebarInset,
   SidebarHeader,
   SidebarContent,
   SidebarGroup,
@@ -22,13 +19,17 @@ import {
   CalendarDays,
   ListMusic,
   LogOut,
-  CreditCard
+  CreditCard,
+  Loader2,
 } from 'lucide-react';
 import { Icons } from '@/components/icons';
 import { useAuth } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { useUserProfile } from '@/hooks/use-user-profile';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 
 const sidebarNavLinks = [
   { href: '/artists/portal', label: 'Dashboard', icon: LayoutDashboard },
@@ -46,6 +47,8 @@ export default function ArtistPortalLayout({
   const auth = useAuth();
   const { toast } = useToast();
   const pathname = usePathname();
+  const router = useRouter();
+  const { user, isUserLoading } = useUserProfile();
 
   const handleLogout = async () => {
     if (!auth) return;
@@ -55,7 +58,7 @@ export default function ArtistPortalLayout({
         title: 'Logged Out',
         description: 'You have been successfully logged out.',
       });
-      // You might want to redirect to home or login page
+      router.push('/');
     } catch (error) {
       console.error('Error signing out:', error);
       toast({
@@ -65,6 +68,39 @@ export default function ArtistPortalLayout({
       });
     }
   };
+
+  if (isUserLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-16 w-16 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (!user || user.isVenue) {
+    return (
+      <div className="container flex h-screen items-center justify-center">
+        <Card className="w-full max-w-md text-center">
+          <CardHeader>
+            <CardTitle>Access Denied</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-muted-foreground">
+              You must be logged in as an artist to access this portal.
+            </p>
+            <div className="flex flex-col space-y-2">
+              <Button asChild>
+                <Link href="/login?redirect=/artists/portal">Login as Artist</Link>
+              </Button>
+               <Button asChild variant="outline">
+                <Link href="/">Return to Home</Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <SidebarProvider>
@@ -111,7 +147,7 @@ export default function ArtistPortalLayout({
           </SidebarMenu>
         </SidebarFooter>
       </Sidebar>
-      <SidebarInset>{children}</SidebarInset>
+      <main className="flex-1">{children}</main>
     </SidebarProvider>
   );
 }

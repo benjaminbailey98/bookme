@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
@@ -57,7 +56,7 @@ export default function VenuesPage() {
 
             return (
               <Card key={venue.id} className="flex flex-col">
-                <CardHeader>
+                <CardHeader className="p-0">
                   <div className="relative aspect-video w-full">
                     <Image
                       src={image}
@@ -68,7 +67,7 @@ export default function VenuesPage() {
                     />
                   </div>
                 </CardHeader>
-                <CardContent className="flex-grow">
+                <CardContent className="flex-grow p-6">
                   <CardTitle className="mb-1">{venue.companyName}</CardTitle>
                   <CardDescription>{venue.companyAddress}</CardDescription>
                 </CardContent>

@@ -11,7 +11,6 @@ import {
   Building,
   Calendar,
   DollarSign,
-  ListMusic,
   Loader2,
   Music,
 } from 'lucide-react';
@@ -22,7 +21,6 @@ import {
   collectionGroup,
   query,
   where,
-  Timestamp,
   orderBy,
   limit,
 } from 'firebase/firestore';
@@ -39,11 +37,11 @@ import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { EventCalendar } from '@/components/event-calendar';
+import { useUserProfile } from '@/hooks/use-user-profile';
 
 export default function ArtistPortalPage() {
-  const { user, isUserLoading } = useUser();
+  const { user, isUserLoading } = useUserProfile();
   const firestore = useFirestore();
-  const router = useRouter();
 
   const bookingsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
@@ -110,12 +108,6 @@ export default function ArtistPortalPage() {
         return 'outline';
     }
   };
-
-  useEffect(() => {
-    if (!isUserLoading && !user) {
-      router.push('/login');
-    }
-  }, [user, isUserLoading, router]);
 
   if (isUserLoading || areBookingsLoading) {
     return (

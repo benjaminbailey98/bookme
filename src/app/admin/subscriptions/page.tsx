@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo } from 'react';
@@ -76,7 +75,7 @@ export default function AdminSubscriptionsPage() {
         <CardHeader>
           <CardTitle>All Subscriptions</CardTitle>
           <CardDescription>
-            View and manage all user subscriptions. (Admin access required)
+            View and manage all user subscriptions.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -97,7 +96,7 @@ export default function AdminSubscriptionsPage() {
                     <Loader2 className="mx-auto h-8 w-8 animate-spin text-muted-foreground" />
                   </TableCell>
                 </TableRow>
-              ) : !isLoading && subscriptions && subscriptions.length > 0 && isUserAdmin ? (
+              ) : subscriptions && subscriptions.length > 0 ? (
                 subscriptions.map((sub) => (
                   <TableRow key={sub.id}>
                     <TableCell className="font-medium">
@@ -127,7 +126,7 @@ export default function AdminSubscriptionsPage() {
                     colSpan={5}
                     className="h-24 text-center text-muted-foreground"
                   >
-                    {isUserAdmin ? "No subscriptions found." : "Insufficient permissions to view subscriptions."}
+                    No subscriptions found.
                   </TableCell>
                 </TableRow>
               )}

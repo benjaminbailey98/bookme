@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
@@ -18,17 +17,9 @@ import {
   Youtube,
   Instagram,
   Facebook,
-  PlayCircle,
   Loader2,
 } from 'lucide-react';
 import Link from 'next/link';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 const artistImages = PlaceHolderImages.filter(img => img.id.startsWith('artist-'));
@@ -72,7 +63,7 @@ export default function ArtistsPage() {
 
             return(
             <Card key={artist.id} className="flex flex-col">
-              <CardHeader>
+              <CardHeader className="p-0">
                   <div className="relative aspect-video w-full">
                      <Image
                         src={image}
@@ -83,7 +74,7 @@ export default function ArtistsPage() {
                       />
                   </div>
               </CardHeader>
-              <CardContent className="flex-grow">
+              <CardContent className="flex-grow p-6">
                 <CardTitle className="mb-2">{artist.stageName}</CardTitle>
                 <CardDescription className="line-clamp-3">{artist.shortBio}</CardDescription>
                  <div className="flex items-center gap-4 mt-4">

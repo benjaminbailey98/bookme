@@ -1,4 +1,3 @@
-
 'use server';
 
 import { initializeApp, getApps, type FirebaseApp } from 'firebase/app';
@@ -19,9 +18,6 @@ export async function createVenueAccountAndProfile(
   profileData: Omit<VenueProfile, 'id' | 'userId'>,
   password: string
 ): Promise<{ success: boolean; error?: string }> {
-  // This server action attempts to use client-side auth methods on the server,
-  // which is not the correct pattern. A proper implementation would use the
-  // Firebase Admin SDK in a secure backend environment.
   try {
     const app = getApp();
     const auth = getAuth(app);

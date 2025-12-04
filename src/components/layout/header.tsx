@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -10,15 +9,10 @@ import { useUser, useAuth } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-
-const navLinks = [
-  { href: '/artists', label: 'Browse Artists' },
-  { href: '/artists/portal', label: 'Artist Portal' },
-  { href: '/venues/portal', label: 'Venue Portal' },
-];
+import { useUserProfile } from '@/hooks/use-user-profile';
 
 export default function Header() {
-  const { user, isUserLoading: loading } = useUser();
+  const { user, isUserLoading: loading } = useUserProfile();
   const auth = useAuth();
   const { toast } = useToast();
   const router = useRouter();
@@ -42,7 +36,13 @@ export default function Header() {
     }
   };
 
-  const adminHref = user ? '/admin' : '/login?redirect=/admin';
+  const navLinks = [
+    { href: '/artists', label: 'Browse Artists' },
+    { href: '/venues', label: 'Browse Venues' },
+    ...(user && !user.isVenue ? [{ href: '/artists/portal', label: 'Artist Portal' }] : []),
+    ...(user && user.isVenue ? [{ href: '/venues/portal', label: 'Venue Portal' }] : []),
+    ...(user && user.isAdmin ? [{ href: '/admin', label: 'Admin' }] : []),
+  ];
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -64,12 +64,6 @@ export default function Header() {
                 {link.label}
               </Link>
             ))}
-             <Link
-                href={adminHref}
-                className="transition-colors hover:text-foreground/80 text-foreground/60"
-              >
-                Admin
-              </Link>
           </nav>
         </div>
 
@@ -88,7 +82,7 @@ export default function Header() {
                 <span className="font-bold font-headline">Vibe Request</span>
               </Link>
               <nav className="flex flex-col space-y-4">
-                {[...navLinks, { href: adminHref, label: 'Admin' }].map((link) => (
+                {navLinks.map((link) => (
                   <Link key={link.href} href={link.href} className="text-lg">
                     {link.label}
                   </Link>
