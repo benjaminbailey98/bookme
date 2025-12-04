@@ -38,7 +38,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
-import { CalendarIcon, HelpCircle, Loader2, Sparkles } from 'lucide-react';
+import { CalendarIcon, HelpCircle, Loader2 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -47,13 +47,12 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { useEffect, useState, useTransition } from 'react';
-import { getSuggestions, submitBookingRequest } from './actions';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { useEffect, useMemo, useTransition } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where } from 'firebase/firestore';
-import type { ArtistProfile, ArtistAvailability } from '@/lib/types';
+import { collection, query } from 'firebase/firestore';
+import type { ArtistProfile, ArtistAvailability, BookingRequest } from '@/lib/types';
+import { submitBookingRequest } from './actions';
 
 const bookingFormSchema = z.object({
   eventDate: z.date({
@@ -130,9 +129,7 @@ export function BookingForm() {
   const { toast } = useToast();
   const { user } = useUser();
   const firestore = useFirestore();
-  const [isAiPending, startAiTransition] = useTransition();
   const [isSubmitPending, startSubmitTransition] = useTransition();
-  const [aiNotes, setAiNotes] = useState<string | null>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -203,7 +200,6 @@ export function BookingForm() {
                 'Your request has been sent. Please allow 24-48 hours for a response.',
         });
         form.reset();
-        setAiNotes(null);
         if (user) {
             router.push('/venues/portal/bookings');
         }
@@ -212,44 +208,6 @@ export function BookingForm() {
             variant: 'destructive',
             title: 'Submission Failed',
             description: result.error || 'Could not submit your booking request.',
-        });
-      }
-    });
-  }
-
-  function handleAiSuggestions() {
-    const { eventType, venueName, eventTheme } = form.getValues();
-    startAiTransition(async () => {
-      setAiNotes(null);
-      const result = await getSuggestions({
-        eventType,
-        venue: venueName,
-        theme: eventTheme,
-      });
-
-      if (result.success && result.data) {
-        if (result.data.suggestedAttire) {
-          form.setValue('attire', result.data.suggestedAttire, {
-            shouldValidate: true,
-          });
-        }
-        if (result.data.suggestedTheme) {
-          form.setValue('eventTheme', result.data.suggestedTheme, {
-            shouldValidate: true,
-          });
-        }
-        if (result.data.additionalNotes) {
-          setAiNotes(result.data.additionalNotes);
-        }
-        toast({
-          title: 'Suggestions Applied',
-          description: 'We\'ve filled in some ideas for you!',
-        });
-      } else {
-        toast({
-          variant: 'destructive',
-          title: 'Error',
-          description: result.error || 'Could not fetch suggestions.',
         });
       }
     });
@@ -501,20 +459,9 @@ export function BookingForm() {
                   Help us understand the atmosphere of your event.
                 </CardDescription>
               </div>
-              <Button type="button" size="sm" onClick={handleAiSuggestions} disabled={isAiPending} className="mt-4 sm:mt-0">
-                {isAiPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                Get Suggestions
-              </Button>
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
-             {aiNotes && (
-              <Alert>
-                <Sparkles className="h-4 w-4" />
-                <AlertTitle>AI Suggestion</AlertTitle>
-                <AlertDescription>{aiNotes}</AlertDescription>
-              </Alert>
-            )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField
                   control={form.control}
