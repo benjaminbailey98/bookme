@@ -3,7 +3,8 @@
 
 import { useMemo } from 'react';
 import { collection, query, orderBy } from 'firebase/firestore';
-import { useFirestore, useCollection, useMemoFirebase, useUser } from '@/firebase';
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { useUserProfile } from '@/hooks/use-user-profile';
 import type { Referral, User } from '@/lib/types';
 import {
   Card,
@@ -25,8 +26,8 @@ import { format } from 'date-fns';
 
 export default function AdminReferralsPage() {
   const firestore = useFirestore();
-  const { user: currentUser } = useUser();
-  const isUserAdmin = (currentUser as User)?.isAdmin;
+  const { user: currentUser } = useUserProfile();
+  const isUserAdmin = currentUser?.isAdmin;
 
   const referralsQuery = useMemoFirebase(() => {
     if (!firestore || !isUserAdmin) return null;

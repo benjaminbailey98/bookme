@@ -1,8 +1,10 @@
+
 'use client';
 
 import { useMemo } from 'react';
 import { collection, query, orderBy } from 'firebase/firestore';
-import { useFirestore, useCollection, useMemoFirebase, useUser } from '@/firebase';
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { useUserProfile } from '@/hooks/use-user-profile';
 import type { Review, User } from '@/lib/types';
 import {
   Card,
@@ -25,8 +27,8 @@ import { Badge } from '@/components/ui/badge';
 
 export default function AdminReviewsPage() {
   const firestore = useFirestore();
-  const { user: currentUser } = useUser();
-  const isUserAdmin = (currentUser as User)?.isAdmin;
+  const { user: currentUser } = useUserProfile();
+  const isUserAdmin = currentUser?.isAdmin;
 
 
   const reviewsQuery = useMemoFirebase(() => {

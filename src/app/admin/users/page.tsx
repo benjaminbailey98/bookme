@@ -1,3 +1,4 @@
+
 'use client';
 
 import { collection, doc, updateDoc, query } from 'firebase/firestore';
@@ -32,13 +33,13 @@ import { Loader2, MoreHorizontal, ShieldAlert } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
-import { useUser } from '@/firebase';
+import { useUserProfile } from '@/hooks/use-user-profile';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useState } from 'react';
 
 export default function AdminUsersPage() {
   const firestore = useFirestore();
-  const { user: currentUser } = useUser();
+  const { user: currentUser } = useUserProfile();
   const { toast } = useToast();
   const [isUpdatingRole, setIsUpdatingRole] = useState(false);
 

@@ -1,9 +1,11 @@
+
 'use client';
 
 import { useMemo, useState } from 'react';
 import { collectionGroup, query, where, collection } from 'firebase/firestore';
-import { useFirestore, useCollection, useMemoFirebase, useUser } from '@/firebase';
-import type { BookingRequest, ArtistAvailability, ArtistProfile, User } from '@/lib/types';
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { useUserProfile } from '@/hooks/use-user-profile';
+import type { BookingRequest, ArtistAvailability, ArtistProfile } from '@/lib/types';
 import {
   Card,
   CardContent,
@@ -22,8 +24,8 @@ import { Badge } from '@/components/ui/badge';
 export default function AdminCalendarPage() {
   const firestore = useFirestore();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const { user: currentUser } = useUser();
-  const isUserAdmin = (currentUser as User)?.isAdmin;
+  const { user: currentUser } = useUserProfile();
+  const isUserAdmin = currentUser?.isAdmin;
 
   // 1. Fetch confirmed bookings for the event calendar
   const confirmedBookingsQuery = useMemoFirebase(() => {

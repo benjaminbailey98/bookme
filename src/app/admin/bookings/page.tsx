@@ -9,8 +9,9 @@ import {
   getDocs,
   where,
 } from 'firebase/firestore';
-import { useFirestore, useUser, useCollection, useMemoFirebase } from '@/firebase';
-import type { BookingRequest, ArtistProfile, User } from '@/lib/types';
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { useUserProfile } from '@/hooks/use-user-profile';
+import type { BookingRequest, ArtistProfile } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -48,8 +49,8 @@ import Link from 'next/link';
 export default function AdminBookingsPage() {
   const firestore = useFirestore();
   const { toast } = useToast();
-  const { user: currentUser } = useUser();
-  const isUserAdmin = (currentUser as User)?.isAdmin;
+  const { user: currentUser } = useUserProfile();
+  const isUserAdmin = currentUser?.isAdmin;
 
   const bookingsQuery = useMemoFirebase(() => {
     if (!firestore || !isUserAdmin) return null;
@@ -242,5 +243,3 @@ export default function AdminBookingsPage() {
     </div>
   );
 }
-
-    

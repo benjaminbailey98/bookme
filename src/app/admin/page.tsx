@@ -1,20 +1,21 @@
 
 'use client';
 
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { useCollection, useMemoFirebase } from '@/firebase';
+import { useUserProfile } from '@/hooks/use-user-profile';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, Building, ListMusic, UserCheck, Star } from 'lucide-react';
 import { collection, query, where, collectionGroup } from 'firebase/firestore';
 import type { User, ArtistProfile, VenueProfile, BookingRequest } from '@/lib/types';
 import { useMemo } from 'react';
 import { Loader2 } from 'lucide-react';
-import { useUser } from '@/firebase';
+import { useFirestore } from '@/firebase';
 
 export default function AdminDashboardPage() {
 
   const firestore = useFirestore();
-  const { user: currentUser } = useUser();
-  const isUserAdmin = (currentUser as User)?.isAdmin;
+  const { user: currentUser } = useUserProfile();
+  const isUserAdmin = currentUser?.isAdmin;
 
 
   const usersQuery = useMemoFirebase(() => {
@@ -120,5 +121,3 @@ export default function AdminDashboardPage() {
     </div>
   );
 }
-
-    

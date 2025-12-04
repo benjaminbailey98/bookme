@@ -3,7 +3,8 @@
 
 import { useMemo } from 'react';
 import { collectionGroup, query } from 'firebase/firestore';
-import { useFirestore, useCollection, useMemoFirebase, useUser } from '@/firebase';
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { useUserProfile } from '@/hooks/use-user-profile';
 import type { Subscription, User } from '@/lib/types';
 import {
   Card,
@@ -26,8 +27,8 @@ import { format } from 'date-fns';
 
 export default function AdminSubscriptionsPage() {
   const firestore = useFirestore();
-  const { user: currentUser } = useUser();
-  const isUserAdmin = (currentUser as User)?.isAdmin;
+  const { user: currentUser } = useUserProfile();
+  const isUserAdmin = currentUser?.isAdmin;
 
   const subscriptionsQuery = useMemoFirebase(() => {
     if (!firestore || !isUserAdmin) return null;
