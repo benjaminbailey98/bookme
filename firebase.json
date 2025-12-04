@@ -1,4 +1,3 @@
-
 {
   "apphosting": {
     "backendId": "bookme",
@@ -6,8 +5,7 @@
       "node_modules",
       ".git",
       "firebase-debug.log",
-      "firebase-debug.*.log",
-      "bookings"
+      "firebase-debug.*.log"
     ],
     "alwaysDeployFromSource": true
   }

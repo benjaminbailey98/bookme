@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import { Toaster } from '@/components/ui/toaster';
 import Header from '@/components/layout/header';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
+import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 
 export const metadata: Metadata = {
   title: 'Vibe Request',
@@ -41,6 +42,7 @@ export default function RootLayout({
             <main className="flex-1">{children}</main>
           </div>
           <Toaster />
+          <FirebaseErrorListener />
         </FirebaseClientProvider>
       </body>
     </html>
